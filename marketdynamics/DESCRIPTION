@@ -1,0 +1,39 @@
+Package: marketdynamics
+Title: Energy and Treasury Market Dynamics Dashboard
+Version: 0.1.0
+Authors@R:
+    person("Duncan", "McNabb", role = c("aut", "cre"),
+           email = "duncanmcnabb@ualberta.ca")
+Description: A production-grade Shiny application built as a golem package
+    for analyzing financial market dynamics across energy futures and US
+    Treasury markets. Covers forward curve behavior, volatility surface,
+    co-dynamics, seasonality, and hedge ratio dynamics.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: false
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Depends:
+    R (>= 4.1.0)
+Imports:
+    shiny (>= 1.8.0),
+    golem (>= 0.4.1),
+    bslib (>= 0.6.0),
+    bsicons (>= 0.1.2),
+    plotly (>= 4.10.0),
+    dplyr (>= 1.1.0),
+    tidyr (>= 1.3.0),
+    lubridate (>= 1.9.0),
+    stringr (>= 1.5.0),
+    zoo (>= 1.8.0),
+    RTL,
+    fredr (>= 2.1.0),
+    config (>= 0.3.2),
+    htmltools (>= 0.5.7)
+Suggests:
+    testthat (>= 3.0.0),
+    shinytest2,
+    withr
+Remotes:
+    patzlaw/RTL
+Config/testthat/edition: 3

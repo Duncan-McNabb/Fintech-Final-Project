@@ -1,0 +1,6 @@
+.Renviron
+.Rhistory
+.RData
+*.Rproj.user
+marketdynamics/man/*.Rd
+
