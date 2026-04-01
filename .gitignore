@@ -3,4 +3,5 @@
 .RData
 *.Rproj.user
 marketdynamics/man/*.Rd
-
+.DS_Store
+**/.DS_Store
