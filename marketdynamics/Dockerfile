@@ -25,7 +25,7 @@ RUN R -e "install.packages(c( \
     ), repos='https://cran.rstudio.com/', Ncpus=2)"
 
 # Install RTL from GitHub — separate layer so CRAN packages stay cached
-RUN R -e "remotes::install_github('patzlaw/RTL', dependencies=FALSE)"
+RUN R -e "remotes::install_github('patzlaw/RTL', dependencies=NA)"
 
 # Copy package source and install it
 COPY . /app
