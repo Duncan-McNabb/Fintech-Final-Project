@@ -24,7 +24,9 @@ RUN R -e "install.packages(c( \
     'tidyquant', 'config', 'htmltools' \
     ), repos='https://cran.rstudio.com/', Ncpus=2)"
 
-# Install RTL from GitHub — separate layer so CRAN packages stay cached
+# Install RTL from GitHub — GITHUB_PAT prevents API rate-limit failures on CI
+ARG GITHUB_PAT
+ENV GITHUB_PAT=${GITHUB_PAT}
 RUN R -e "remotes::install_github('patzlaw/RTL', dependencies=NA)"
 
 # Copy package source and install it

@@ -29,5 +29,7 @@ jobs:
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/marketdynamics:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/marketdynamics:${{ github.sha }}
+          build-args: |
+            GITHUB_PAT=${{ secrets.GITHUB_TOKEN }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
