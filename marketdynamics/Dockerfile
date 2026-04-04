@@ -32,4 +32,4 @@ RUN R -e "remotes::install_local('/app', dependencies=FALSE)"
 
 EXPOSE 3838
 
-CMD ["Rscript", "-e", "marketdynamics::run_app(host='0.0.0.0', port=3838)"]
+CMD ["Rscript", "-e", "marketdynamics::run_app(options=list(host='0.0.0.0', port=3838))"]
