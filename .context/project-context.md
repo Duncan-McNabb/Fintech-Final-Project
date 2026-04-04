@@ -16,17 +16,16 @@
 | Tool | Purpose |
 |---|---|
 | `golem` | Package framework for Shiny apps |
-| `bslib` | UI — Bootstrap 5, flatly theme, `page_sidebar()` layout |
-| `bsicons` | Icons for bslib value boxes and nav tabs |
+| `bslib` | UI — Bootstrap 5, flatly theme, `page_navbar()` layout |
+| `bsicons` | Icons for bslib nav tabs |
 | `plotly` | All interactive charts |
 | `dplyr`, `tidyr` | Data manipulation |
 | `lubridate` | Date handling |
 | `zoo` | Rolling window operations (`rollapply`) |
-| `fredr` | FRED API client for CMT data |
+| `tidyquant` | FRED CMT data via `tq_get(get="economic.data")` — no API key required |
 | `RTL` | Energy futures data (GitHub only: `patzlaw/RTL`) |
 | `config` | golem environment config |
 | `testthat` | Unit testing |
-| `shinytest2` | End-to-end app testing |
 
 ---
 
@@ -38,52 +37,40 @@
 
 ---
 
-## Architecture: Small r Strategy
+## Architecture
 
-The app uses the Small r Strategy for reactive state management.
+Each analysis module is self-contained: it owns its own `reactiveVal(NULL)` for local data state, loads data via `observeEvent` on market/date input changes, and does not read from or write to `r`. The shared `r` object exists in `app_server.R` but is currently unused (kept for API consistency).
 
 ```r
-# app_server.R — the only place r is created
+# app_server.R
 app_server <- function(input, output, session) {
-  r <- shiny::reactiveValues(
-    energy_long     = NULL,   # filtered RTL::dflong data
-    cmt_long        = NULL,   # filtered FRED CMT data
-    combined_long   = NULL,   # row-bound union with source column
-    date_range      = NULL,   # selected date range
-    selected_energy = character(0),
-    selected_cmt    = character(0)
-  )
-
-  mod_inputs_server("inputs_1", r = r)             # ONLY writer to r
+  r <- shiny::reactiveValues()   # kept for API consistency; currently unused
   mod_forward_curve_server("forward_curve_1", r = r)
   mod_volatility_server("volatility_1",       r = r)
-  mod_codynamics_server("codynamics_1",       r = r)
   mod_seasonality_server("seasonality_1",     r = r)
   mod_hedge_ratio_server("hedge_ratio_1",     r = r)
+  mod_treasury_curve_server("treasury_curve_1", r = r)
 }
 ```
-
-**Rule:** `mod_inputs` is the only module that writes to `r`. All other modules read from `r` only. This enforces unidirectional data flow and prevents circular reactivity.
 
 ---
 
 ## UI Layout
 
 ```r
-# app_ui.R
-bslib::page_sidebar(
+# app_ui.R — bslib::page_navbar(), 5 tabs, no sidebar
+bslib::page_navbar(
   title = "Market Dynamics",
   theme = bslib::bs_theme(version = 5, bootswatch = "flatly"),
-  sidebar = bslib::sidebar(mod_inputs_ui("inputs_1")),
-  bslib::navset_card_tab(
-    bslib::nav_panel("Forward Curve",  mod_forward_curve_ui("forward_curve_1")),
-    bslib::nav_panel("Volatility",     mod_volatility_ui("volatility_1")),
-    bslib::nav_panel("Co-Dynamics",    mod_codynamics_ui("codynamics_1")),
-    bslib::nav_panel("Seasonality",    mod_seasonality_ui("seasonality_1")),
-    bslib::nav_panel("Hedge Ratios",   mod_hedge_ratio_ui("hedge_ratio_1"))
-  )
+  bslib::nav_panel("Forward Curve",   mod_forward_curve_ui("forward_curve_1")),
+  bslib::nav_panel("Treasury Curve",  mod_treasury_curve_ui("treasury_curve_1")),
+  bslib::nav_panel("Volatility",      mod_volatility_ui("volatility_1")),
+  bslib::nav_panel("Seasonality",     mod_seasonality_ui("seasonality_1")),
+  bslib::nav_panel("Hedge Ratios",    mod_hedge_ratio_ui("hedge_ratio_1"))
 )
 ```
+
+Each tab is wrapped in a `bslib::card()` with a `card_header()` showing a bsicons icon and the tab name.
 
 ---
 
@@ -95,45 +82,113 @@ bslib::page_sidebar(
 - Long-format dataset of historical continuous futures contracts
 - **Inspect columns before writing data code:** `dplyr::glimpse(RTL::dflong)`
 - Contract number is embedded in the ticker name (e.g., `CL01` = crude oil contract 1)
-- Extract contract number: `as.integer(stringr::str_extract(ticker, "[0-9]+$"))`
-- Markets include: CL (crude oil), NG (natural gas), HO (heating oil), RB (RBOB gasoline)
+- Extract contract number: `as.integer(stringr::str_extract(series, "[0-9]+$"))`
+- Markets: CL (WTI crude), NG (natural gas), HO (heating oil/ULSD), RB (RBOB gasoline), BRN (Brent crude)
 
-### US Treasury CMT — `fredr`
+### US Treasury CMT — `tidyquant`
 
+- Fetched via `tidyquant::tq_get(symbol, get = "economic.data")`
+- No API key required
 - FRED series: `DGS1MO`, `DGS3MO`, `DGS6MO`, `DGS1`, `DGS2`, `DGS3`, `DGS5`, `DGS7`, `DGS10`, `DGS20`, `DGS30`
-- Start date: `1990-01-01` (pre-2007 as required)
+- Start date: `1990-01-01`
 - Values are in percent (e.g., 4.5 = 4.5%) — divide by 100 before log-return calculations
 - Tenor months map: 1MO=1, 3MO=3, 6MO=6, 1=12, 2=24, 3=36, 5=60, 7=84, 10=120, 20=240, 30=360
 
-### API Key
+---
 
-```r
-# In fct_data.R — loadCMTData()
-key <- Sys.getenv("FRED_API_KEY")
-if (nchar(key) == 0) stop("FRED_API_KEY environment variable is not set.")
-fredr::fredr_set_key(key)
-```
+## Market Fundamentals
 
-- Set locally in `.Renviron` (never commit this file)
-- Passed at Docker runtime: `docker run -e FRED_API_KEY=xxx -p 3838:3838 image`
+### WTI Crude Oil (CL)
+
+**Primary price drivers:**
+- Weekly EIA petroleum inventory report (Wednesday release, ~10:30am ET) — THE primary near-term catalyst
+- OPEC+ production decisions — most important medium-term structural driver
+- Cushing, Oklahoma storage levels — physical delivery point for NYMEX WTI; high storage = contango; low storage = backwardation
+
+**Key spreads to watch:**
+- **WTI-Brent location spread:** WTI historically traded at a premium to Brent (global benchmark). Post-2013 shale boom: WTI went to persistent discount as Cushing storage filled. Has since narrowed as US export infrastructure expanded.
+- **Dec/Jan calendar spread (M1-M2):** Primary near-term market structure signal. Widening backwardation (positive spread, M1 > M2) signals supply tightening. Contango (negative spread) signals storage glut or demand weakness.
+
+**Historical context:**
+- Pre-2013: WTI dominated global crude pricing
+- 2013-2016: Shale revolution caused US production surge → WTI discount to Brent
+- Post-2018: Export infrastructure growth re-converged WTI and Brent
+
+**Hedging patterns:** Producers sell forward curve; refiners buy calendar spreads for margin protection; airlines hedge flat price exposure.
 
 ---
 
-## File Responsibilities
+### Natural Gas (NG)
 
-| File | Owns |
-|---|---|
-| `R/fct_data.R` | All data loading (RTL + FRED) — pure functions, no reactivity |
-| `R/fct_helpers.R` | All analytical computations (rolling vol, beta, correlation, etc.) — pure functions |
-| `R/mod_inputs.R` | Global market/date selector UI + the only server that writes to `r` |
-| `R/mod_forward_curve.R` | Forward curve snapshots and heatmap |
-| `R/mod_volatility.R` | Rolling vol and vol surface |
-| `R/mod_codynamics.R` | Correlation matrix, rolling correlation, PCA |
-| `R/mod_seasonality.R` | Monthly seasonal patterns and year-overlay |
-| `R/mod_hedge_ratio.R` | Rolling OLS hedge ratios between markets |
-| `R/app_ui.R` | Top-level UI — layout only, no logic |
-| `R/app_server.R` | Top-level server — creates `r`, calls all module servers |
-| `R/run_app.R` | `run_app()` entry point |
+**Primary price drivers:**
+- Weekly EIA natural gas storage report (Thursday release) — single most important weekly signal
+- Weather forecasts (heating degree days in winter, cooling degree days in summer)
+- LNG export volumes (structural new demand since ~2016)
+
+**Dual seasonality — unique vs. crude:**
+- **Winter peak:** January-February — heating demand, ~$4.14/MMBtu historical average
+- **Summer peak:** July-August — cooling demand (AC electricity generation)
+- Two distinct seasonal demand surges per year, unlike crude's single summer driving season peak
+
+**Storage cycle:**
+- **Injection season:** April-October — operators fill underground storage; prices tend soft
+- **Withdrawal season:** November-March — inventory drawn down for heating; prices firm
+- The weekly EIA storage report is watched against 5-year average: surplus → price weakness, deficit → price strength
+
+**Key spreads:**
+- **Spark spread:** `Power Price ($/MWh) − (Gas Price ($/MMBtu) × Heat Rate (MMBtu/MWh))`
+  - Heat rate ≈ 7,000-8,000 BTU/kWh for efficient gas turbines
+  - Positive = profitable to run gas-fired power plant; drives gas demand from power sector
+- **Location spreads:** Henry Hub (US benchmark) vs. AECO (Canadian), vs. JKM (Asian LNG benchmark)
+
+**Structural shift:** LNG export capacity grew from near-zero in 2016 to ~14 Bcf/day by 2025. This permanently raised the floor on Henry Hub prices and linked US gas prices to global LNG markets.
+
+**Seasonality cycles:** STL decomposition reveals a 9-year super-cycle + 3-year sub-cycle overlaying the annual seasonal pattern.
+
+---
+
+### Heating Oil / ULSD (HO)
+
+**Primary price drivers:**
+- EIA weekly distillate inventory (Wednesday release)
+- Winter weather in PADD 1 (Northeast US) — primary heating demand region
+- Refinery utilization rates, especially PADD 3 Gulf Coast
+
+**PADD regional structure (critical for HO):**
+- **PADD 1 (East Coast/Northeast):** Primary demand region — home heating oil; tight inventories in winter spike prices
+- **PADD 2 (Midwest):** Secondary demand; harvest season creates Oct-Nov diesel peak (agricultural machinery)
+- **PADD 3 (Gulf Coast):** Main refining supply hub; Colonial Pipeline (PADD 3 → PADD 1) is critical infrastructure
+
+**Key spreads:**
+- **HO-CL crack spread:** Heating oil price minus crude oil price — the refinery distillate margin
+- **3-2-1 crack spread:** `(2 × RB + 1 × HO − 3 × CL) / 3` — industry-standard refinery hedging metric representing the average margin per barrel of crude processed
+
+**Curve signal:** Backwardated in tight winter supply (spot premium); contango in summer as distillate builds. Watch the M1-M2 spread crossing zero at end of winter as a structural signal.
+
+**Infrastructure risk:** Colonial Pipeline disruptions (hurricanes, accidents) cause sharp PADD 1 basis spikes — Northeast heating oil can trade at a premium of $0.20-0.50/gallon over PADD 3.
+
+**PADD spread dynamics:** PADD 1 vs. PADD 3 basis widened significantly 2019-2025 reflecting regional supply/demand divergence.
+
+---
+
+### RBOB Gasoline (RB)
+
+**Primary price drivers:**
+- EIA weekly gasoline inventory report (Wednesday release); specifically PADD 1b (Central Atlantic) is the key regional barometer
+- Summer driving season demand
+- RVP (Reid Vapor Pressure) regulation transition in April/May
+
+**Dual seasonality drivers — unique vs. other markets:**
+1. **Demand seasonality:** Summer driving season (May-August peak); Labor Day marks the end
+2. **Supply seasonality:** RVP regulations require a more expensive, lower-evaporative summer blend starting April-June. The transition itself drives prices higher regardless of crude.
+
+**Key spread:**
+- **RBOB-WTI crack spread:** Gasoline refinery margin; analogous to HO-CL for distillates
+- Ethanol blending economics (10% blend mandate) affect the net margin slightly
+
+**Seasonal risk event:** Hurricane season (August-October) overlaps peak driving demand. Gulf Coast refinery disruptions cause acute supply spikes — historically the sharpest short-term price moves in the gasoline market.
+
+**Curve signal:** Backwardation = market incentive to draw down inventory (supply tight); contango = incentive to store (supply ample). Key watch: does the front-month flip from contango to backwardation heading into May driving season demand build?
 
 ---
 
@@ -141,9 +196,27 @@ fredr::fredr_set_key(key)
 
 1. **Historical forward curve behavior** — `mod_forward_curve`
 2. **Volatility across time to maturity and over time** — `mod_volatility`
-3. **Co-dynamics across markets** — `mod_codynamics`
+3. **Co-dynamics across markets** — `mod_codynamics` *(currently orphaned — must rebuild)*
 4. **Seasonality impact on market dynamics** — `mod_seasonality`
 5. **Hedge ratio dynamics** — `mod_hedge_ratio`
+
+---
+
+## File Responsibilities
+
+| File | Owns |
+|---|---|
+| `R/fct_data.R` | All data loading (RTL + tidyquant/FRED) — pure functions, no reactivity |
+| `R/fct_helpers.R` | All analytical computations (rolling vol, beta, correlation, etc.) — pure functions |
+| `R/mod_forward_curve.R` | Forward curve time-series + calendar spread view |
+| `R/mod_volatility.R` | Rolling vol, term structure (Samuelson Effect) |
+| `R/mod_treasury_curve.R` | US Treasury yield curve dynamics |
+| `R/mod_codynamics.R` | Rolling pairwise correlation, cross-market scatter |
+| `R/mod_seasonality.R` | Monthly seasonal patterns and year-overlay |
+| `R/mod_hedge_ratio.R` | Rolling OLS hedge ratios, crack spreads |
+| `R/app_ui.R` | Top-level UI — layout only, no logic |
+| `R/app_server.R` | Top-level server — creates `r`, calls all module servers |
+| `R/run_app.R` | `run_app()` entry point |
 
 ---
 
@@ -151,10 +224,10 @@ fredr::fredr_set_key(key)
 
 | Function | Returns |
 |---|---|
-| `load_energy_data(tickers, start_date, end_date)` | tibble: `{date, ticker, contract_num, price}` |
-| `load_cmt_data(tickers, start_date, end_date)` | tibble: same schema, rate instead of price |
-| `combine_data(energy_long, cmt_long)` | tibble: row-bound with `source` column added |
-| `pivot_wide(long_data, ticker)` | wide tibble: contract_num as columns |
+| `load_energy_data(market, start_date, end_date)` | tibble: `{date, series, contract_num, value, source}` |
+| `load_cmt_data(start_date, end_date)` | tibble: same schema, CMT rates |
+| `combine_data(energy_long, cmt_long)` | tibble: row-bound with `source` column |
+| `pivot_wide(long_data, market_prefix)` | wide tibble: `{date, c1, c2, ...cN}` |
 | `compute_log_returns(long_data)` | long tibble with `log_return` column added |
 
 ## Key `fct_helpers.R` Functions
@@ -163,7 +236,7 @@ fredr::fredr_set_key(key)
 |---|---|
 | `compute_rolling_vol(returns, window = 21)` | mod_volatility |
 | `compute_return_matrix(long_returns, tickers)` | mod_codynamics |
-| `compute_rolling_correlation(x, y, window = 63)` | mod_codynamics |
+| `compute_rolling_correlation(x, y, window = 63)` | mod_codynamics, mod_hedge_ratio |
 | `compute_rolling_beta(y, x, window = 63)` | mod_hedge_ratio |
 | `compute_seasonal_index(long_data, ticker, freq = "month")` | mod_seasonality |
 | `compute_vol_surface(long_returns, tickers, window = 21)` | mod_volatility |
@@ -174,11 +247,11 @@ All rolling functions use `zoo::rollapply`.
 
 ## Shiny Patterns
 
-- Use `reactive()` for data transformations — not `observe()` or `observeEvent()`.
-- Use `observeEvent()` only for side effects (writing to `r`, showing notifications).
-- Gate expensive data loads behind an `actionButton` in `mod_inputs` to prevent reactive churn.
-- Use `req()` to guard against NULL inputs before computing. Example: `req(r$energy_long)`.
-- Do not use `reactive()` inside `observeEvent()` — it does not work as expected.
+- Each module uses `shiny::reactiveVal(NULL)` for local data state — no shared `r` writes
+- Data loads inside `observeEvent(list(input$energy_market, input$date_range), ignoreNULL=TRUE, ignoreInit=FALSE, ...)`
+- Use `req()` to guard all outputs before data is loaded
+- Never use `observe()` for data transformation — use `reactive()`
+- Never use `<<-` for state — use `reactiveVal()` or module-local variables
 
 ---
 
@@ -186,28 +259,11 @@ All rolling functions use `zoo::rollapply`.
 
 **Dockerfile base:** `rocker/shiny:4.3.3`
 **Docker layer order (for cache efficiency):**
-1. System libs
+1. System libs (including `pandoc` for vignette builds)
 2. CRAN packages
-3. GitHub packages (`RTL`)
+3. GitHub packages (`RTL`) with `build_vignettes=FALSE, upgrade='never'`
 4. Local package install
 
 **GitHub Actions:** Push to `main` triggers build + push to DockerHub.
 **Required GitHub secrets:** `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`
-
----
-
-## Build Sequence
-
-1. Run `dev/01_start.R` — scaffold with `golem::create_golem()`
-2. Inspect `RTL::dflong` columns — confirm schema before writing `fct_data.R`
-3. Write and unit-test `fct_data.R`
-4. Write `mod_inputs.R` — confirm `r` is populated on button click
-5. Write `app_ui.R` + `app_server.R` with stub modules — confirm app launches
-6. Build `mod_forward_curve.R`
-7. Build `mod_volatility.R`
-8. Build `mod_codynamics.R`
-9. Build `mod_seasonality.R`
-10. Build `mod_hedge_ratio.R`
-11. Write tests (`tests/testthat/`)
-12. Dockerfile — test local build
-13. Push to GitHub, set secrets, verify Actions workflow
+**Built-in secret used:** `GITHUB_TOKEN` (passed as `GITHUB_PAT` build-arg to avoid rate limiting on RTL install)

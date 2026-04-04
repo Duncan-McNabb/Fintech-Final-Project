@@ -1,6 +1,7 @@
 FROM rocker/shiny:4.3.3
 
 # System libraries required by R packages
+# pandoc is required for vignette compilation during GitHub package installs
 RUN apt-get update && apt-get install -y \
     libcurl4-openssl-dev \
     libssl-dev \
@@ -12,6 +13,8 @@ RUN apt-get update && apt-get install -y \
     libpng-dev \
     libtiff5-dev \
     libjpeg-dev \
+    libcairo2-dev \
+    pandoc \
     && rm -rf /var/lib/apt/lists/*
 
 # Install remotes first (needed for GitHub packages)
@@ -24,10 +27,13 @@ RUN R -e "install.packages(c( \
     'tidyquant', 'config', 'htmltools' \
     ), repos='https://cran.rstudio.com/', Ncpus=2)"
 
-# Install RTL from GitHub — GITHUB_PAT prevents API rate-limit failures on CI
+# Install RTL from GitHub
+# - GITHUB_PAT prevents API rate-limit failures on CI
+# - build_vignettes=FALSE skips vignette compilation (pandoc version mismatches)
+# - upgrade='never' prevents re-installing already-present CRAN packages
 ARG GITHUB_PAT
 ENV GITHUB_PAT=${GITHUB_PAT}
-RUN R -e "remotes::install_github('patzlaw/RTL', dependencies=NA)"
+RUN R -e "remotes::install_github('patzlaw/RTL', dependencies=NA, build_vignettes=FALSE, upgrade='never')"
 
 # Copy package source and install it
 COPY . /app
