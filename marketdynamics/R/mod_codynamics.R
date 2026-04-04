@@ -9,7 +9,7 @@ mod_codynamics_ui <- function(id) {
   bslib::card(
     full_screen = TRUE,
     bslib::card_header(
-      shiny::tagList(bsicons::bs_icon("arrows-angle-expand"), " Co-Dynamics")
+      shiny::tagList(bsicons::bs_icon("arrows-angle-expand"), " Cross-Market")
     ),
     bslib::card_body(
       shiny::fluidRow(
@@ -23,7 +23,9 @@ mod_codynamics_ui <- function(id) {
             choices  = c(
               "Rolling Correlation" = "rolling",
               "Return Scatter"      = "scatter",
-              "PCA"                 = "pca"
+              "PCA"                 = "pca",
+              "Treasury Curve"      = "treasury",
+              "Yield Spreads"       = "yield_spreads"
             ),
             inline   = TRUE,
             selected = "rolling")
@@ -33,7 +35,10 @@ mod_codynamics_ui <- function(id) {
         )
       ),
       shiny::conditionalPanel(
-        condition = sprintf("input['%s'] != 'pca'", ns("view_type")),
+        condition = sprintf(
+          "input['%s'] == 'rolling' || input['%s'] == 'scatter'",
+          ns("view_type"), ns("view_type")
+        ),
         shiny::fluidRow(
           shiny::column(4,
             shiny::selectInput(ns("series_x"), "Series A", choices = NULL)
@@ -56,7 +61,7 @@ mod_codynamics_ui <- function(id) {
 #' codynamics Server Function
 #'
 #' Self-contained module: loads all energy front months + CMT.
-#' Renders rolling correlation, return scatter, and PCA views.
+#' Renders rolling correlation, return scatter, PCA, Treasury Curve, and Yield Spreads views.
 #' Does NOT read from or write to `r`.
 #'
 #' @param id Module namespace id.
@@ -122,6 +127,20 @@ mod_codynamics_server <- function(id, r) {
         }
       }
     )
+
+    tenor_labels <- c(
+      c1   = "1-Month",  c3   = "3-Month",  c6   = "6-Month",
+      c12  = "1-Year",   c24  = "2-Year",   c36  = "3-Year",
+      c60  = "5-Year",   c84  = "7-Year",   c120 = "10-Year",
+      c240 = "20-Year",  c360 = "30-Year"
+    )
+
+    cmt_wide <- shiny::reactive({
+      shiny::req(combined_data())
+      cmt_only <- dplyr::filter(combined_data(), .data$market == "CMT")
+      shiny::req(nrow(cmt_only) > 0)
+      pivot_wide(cmt_only, "CMT")
+    })
 
     all_returns <- shiny::reactive({
       shiny::req(combined_data())
@@ -235,6 +254,83 @@ mod_codynamics_server <- function(id, r) {
             legend = list(orientation = "h", x = 0, y = 1.08)
           )
 
+      } else if (input$view_type == "treasury") {
+        shiny::req(cmt_wide())
+        cd <- cmt_wide()
+        contract_cols <- intersect(names(tenor_labels), names(cd))
+        n   <- length(contract_cols)
+        pal <- grDevices::colorRampPalette(c("#440154","#31688e","#35b779","#fde725"))(max(n,1))
+        p <- plotly::plot_ly()
+        for (i in seq_along(contract_cols)) {
+          col    <- contract_cols[i]
+          is_10y <- col == "c120"
+          p <- plotly::add_lines(p,
+            x = cd$date, y = cd[[col]],
+            name = tenor_labels[[col]],
+            line = list(color = if (is_10y) "black" else pal[i], width = if (is_10y) 2.5 else 0.8),
+            showlegend = is_10y, hoverinfo = "none"
+          )
+        }
+        benchmark_cols <- intersect(c("c1","c6","c24","c60","c120","c360"), contract_cols)
+        for (col in benchmark_cols) {
+          p <- plotly::add_lines(p,
+            x = cd$date, y = cd[[col]],
+            name = tenor_labels[[col]],
+            line = list(width = 0, color = "rgba(0,0,0,0)"),
+            showlegend = FALSE,
+            hovertemplate = paste0(tenor_labels[[col]], " \u2014 %{x|%Y-%m-%d}: %{y:.2f}%<extra></extra>")
+          )
+        }
+        p |> plotly::layout(
+          title = "US Treasury Yield Curve Dynamics",
+          xaxis = list(title = "Date"),
+          yaxis = list(title = "Yield (%)"),
+          hovermode = "x unified",
+          legend = list(orientation = "h", x = 0, y = 1.08)
+        )
+
+      } else if (input$view_type == "yield_spreads") {
+        shiny::req(cmt_wide())
+        cd <- cmt_wide()
+        shiny::req("c120" %in% names(cd))
+        spread_df <- dplyr::tibble(date = cd$date)
+        if ("c24" %in% names(cd)) spread_df$s_2s10s <- (cd$c120 - cd$c24) * 100 else spread_df$s_2s10s <- NA_real_
+        if ("c1"  %in% names(cd)) spread_df$s_3m10y <- (cd$c120 - cd$c1)  * 100 else spread_df$s_3m10y <- NA_real_
+        spread_df <- dplyr::filter(spread_df, !is.na(.data$s_2s10s) | !is.na(.data$s_3m10y))
+        y_min <- min(c(spread_df$s_2s10s, spread_df$s_3m10y), na.rm = TRUE)
+        y_max <- max(c(spread_df$s_2s10s, spread_df$s_3m10y), na.rm = TRUE)
+        y_pad <- (y_max - y_min) * 0.05
+        bg_shapes <- list(list(
+          type = "rect", xref = "paper", yref = "y",
+          x0 = 0, x1 = 1, y0 = y_min - y_pad, y1 = 0,
+          fillcolor = "rgba(231,76,60,0.08)", line = list(width = 0)
+        ))
+        p <- plotly::plot_ly()
+        if (!all(is.na(spread_df$s_2s10s)))
+          p <- plotly::add_lines(p, data = spread_df, x = ~date, y = ~s_2s10s,
+            name = "2s10s (10yr\u22122yr)", line = list(color = "#2c7bb6", width = 1.8),
+            hovertemplate = "Date: %{x|%Y-%m-%d}<br>2s10s: %{y:.1f} bps<extra></extra>")
+        if (!all(is.na(spread_df$s_3m10y)))
+          p <- plotly::add_lines(p, data = spread_df, x = ~date, y = ~s_3m10y,
+            name = "3m10y (10yr\u22123m)", line = list(color = "#d7191c", width = 1.8),
+            hovertemplate = "Date: %{x|%Y-%m-%d}<br>3m10y: %{y:.1f} bps<extra></extra>")
+        p |>
+          plotly::add_lines(x = spread_df$date, y = rep(0, nrow(spread_df)),
+            line = list(color = "grey30", dash = "dash", width = 1),
+            showlegend = FALSE, hoverinfo = "none") |>
+          plotly::layout(
+            title = "Yield Curve Spreads \u2014 Recession Indicator",
+            xaxis = list(title = "Date"),
+            yaxis = list(title = "Spread (basis points)"),
+            shapes = bg_shapes,
+            legend = list(orientation = "h", x = 0, y = 1.08),
+            annotations = list(list(
+              x = 0.01, y = 0.02, xref = "paper", yref = "paper",
+              text = "Red zone = inverted curve (negative spread \u2014 historical recession precursor)",
+              showarrow = FALSE, font = list(size = 10, color = "#c0392b"), align = "left"
+            ))
+          )
+
       } else {
         # PCA biplot
         all_series_ids <- unique(all_returns()$series)
@@ -278,7 +374,7 @@ mod_codynamics_server <- function(id, r) {
             showlegend = FALSE, hoverinfo = "none"
           ) |>
           plotly::layout(
-            title  = "PCA Biplot — Market Factor Loadings",
+            title  = "PCA Biplot \u2014 Market Factor Loadings",
             xaxis  = list(title = paste0("PC1 (", pct_var[1], "% variance explained)")),
             yaxis  = list(title = paste0("PC2 (", pct_var[2], "% variance explained)")),
             legend = list(orientation = "h", x = 0, y = 1.08),

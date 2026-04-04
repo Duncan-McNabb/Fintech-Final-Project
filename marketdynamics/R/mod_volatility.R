@@ -53,7 +53,9 @@ mod_volatility_ui <- function(id) {
         )
       ),
       shiny::tags$hr(),
-      plotly::plotlyOutput(ns("vol_plot"), height = "calc(100vh - 340px)")
+      plotly::plotlyOutput(ns("vol_plot"), height = "calc(100vh - 340px)"),
+      shiny::tags$hr(),
+      shiny::uiOutput(ns("market_context"))
     )
   )
 }
@@ -61,16 +63,17 @@ mod_volatility_ui <- function(id) {
 #' volatility Server Function
 #'
 #' Loads energy data locally and renders volatility charts.
-#' Does NOT read from or write to `r`.
+#' Reads r$market to sync the market selector.
 #'
 #' @param id Module namespace id.
-#' @param r A `shiny::reactiveValues` object (unused; kept for API consistency).
+#' @param r A `shiny::reactiveValues` object.
 #' @return None.
 #' @export
 mod_volatility_server <- function(id, r) {
   shiny::moduleServer(id, function(input, output, session) {
 
     energy_data  <- shiny::reactiveVal(NULL)
+    petro_data   <- shiny::reactiveVal(NULL)
 
     # Primary market data load
     shiny::observeEvent(
@@ -105,6 +108,30 @@ mod_volatility_server <- function(id, r) {
         }
       }
     )
+
+    shiny::observeEvent(
+      list(input$energy_market, input$date_range),
+      ignoreNULL = TRUE, ignoreInit = TRUE, {
+        shiny::req(input$energy_market, input$date_range)
+        if (!input$energy_market %in% c("CL", "HO", "RB")) {
+          petro_data(NULL)
+          return()
+        }
+        start <- as.Date(input$date_range[1])
+        end   <- as.Date(input$date_range[2])
+        pd <- tryCatch(
+          load_energy_data(c("CL", "HO", "RB"), start, end) |>
+            dplyr::filter(.data$contract_num == 1),
+          error = function(e) NULL
+        )
+        petro_data(pd)
+      }
+    )
+
+    shiny::observeEvent(r$market, {
+      shiny::req(r$market)
+      shiny::updateSelectInput(session, "energy_market", selected = r$market)
+    }, ignoreNULL = TRUE, ignoreInit = TRUE)
 
     returns_data <- shiny::reactive({
       shiny::req(energy_data())
@@ -221,6 +248,120 @@ mod_volatility_server <- function(id, r) {
         )
 
       }
+    })
+
+    output$market_context <- shiny::renderUI({
+      shiny::req(input$energy_market)
+      mkt <- input$energy_market
+
+      if (mkt %in% c("CL", "HO", "RB")) {
+        bslib::card(
+          bslib::card_header(
+            shiny::tagList(bsicons::bs_icon("activity"), " Market Context: Outright vs. Crack Spread Volatility")
+          ),
+          bslib::card_body(
+            plotly::plotlyOutput(session$ns("crack_vol_plot"), height = "320px")
+          )
+        )
+
+      } else if (mkt == "NG") {
+        info_text <- "Natural Gas volatility is primarily driven by weather surprises and EIA storage report beats/misses. Vol spikes sharply when actual storage injections/withdrawals deviate significantly from consensus expectations \u2014 typically during extreme cold snaps (2021 Texas freeze) or hurricane-related production outages."
+        bslib::card(
+          bslib::card_header(
+            shiny::tagList(bsicons::bs_icon("info-circle"), " Market Context: Natural Gas")
+          ),
+          bslib::card_body(shiny::tags$p(class = "text-muted", style = "font-size:0.9rem;", info_text))
+        )
+
+      } else if (mkt == "BRN") {
+        info_text <- "Brent Crude volatility reflects geopolitical risk premiums more than WTI. Middle East supply disruptions, OPEC+ production decisions, and tanker route constraints (Strait of Hormuz, Suez Canal) drive Brent vol spikes. Brent is typically 10-20% less volatile than WTI on an annualized basis due to its global benchmark status and deeper liquidity."
+        bslib::card(
+          bslib::card_header(
+            shiny::tagList(bsicons::bs_icon("info-circle"), " Market Context: Brent Crude")
+          ),
+          bslib::card_body(shiny::tags$p(class = "text-muted", style = "font-size:0.9rem;", info_text))
+        )
+
+      } else {
+        NULL
+      }
+    })
+
+    output$crack_vol_plot <- plotly::renderPlotly({
+      shiny::req(petro_data(), input$energy_market, input$vol_window)
+      cd  <- petro_data()
+      mkt <- input$energy_market
+
+      cl_px <- dplyr::filter(cd, .data$market == "CL") |>
+        dplyr::arrange(date) |> dplyr::select(date, value) |> dplyr::rename(cl = value)
+      ho_px <- dplyr::filter(cd, .data$market == "HO") |>
+        dplyr::arrange(date) |> dplyr::select(date, value) |> dplyr::rename(ho = value)
+      rb_px <- dplyr::filter(cd, .data$market == "RB") |>
+        dplyr::arrange(date) |> dplyr::select(date, value) |> dplyr::rename(rb = value)
+
+      px_wide <- dplyr::inner_join(cl_px, ho_px, by = "date") |>
+        dplyr::inner_join(rb_px, by = "date") |>
+        dplyr::arrange(date) |>
+        dplyr::mutate(
+          ho_bbl    = ho * 42,
+          rb_bbl    = rb * 42,
+          ho_cl_spd = ho_bbl - cl,
+          rb_cl_spd = rb_bbl - cl
+        )
+
+      # Outright vol from petro_data (already front-month)
+      outright_ret <- dplyr::filter(cd, .data$market == mkt) |>
+        dplyr::arrange(date) |>
+        compute_log_returns() |>
+        dplyr::mutate(
+          vol = compute_rolling_vol(.data$log_return, window = input$vol_window) * 100
+        ) |>
+        dplyr::filter(!is.na(.data$vol)) |>
+        dplyr::select(date, vol)
+
+      crack_col   <- if (mkt %in% c("CL", "HO")) "ho_cl_spd" else "rb_cl_spd"
+      crack_label <- if (mkt %in% c("CL", "HO")) "HO-CL" else "RB-CL"
+
+      crack_vol_df <- px_wide |>
+        dplyr::mutate(
+          spd_ret   = (.data[[crack_col]] - dplyr::lag(.data[[crack_col]])) /
+                      abs(dplyr::lag(.data[[crack_col]])),
+          crack_vol = zoo::rollapply(
+            .data$spd_ret, width = input$vol_window,
+            FUN = function(x) stats::sd(x, na.rm = TRUE) * sqrt(252) * 100,
+            fill = NA, align = "right"
+          )
+        ) |>
+        dplyr::filter(!is.na(.data$crack_vol)) |>
+        dplyr::select(date, crack_vol)
+
+      joined <- dplyr::inner_join(outright_ret, crack_vol_df, by = "date")
+      shiny::req(nrow(joined) > 0)
+
+      plotly::plot_ly(joined,
+        x    = ~date, y = ~vol,
+        type = "scatter", mode = "lines",
+        name = paste0(mkt, " Outright Vol"),
+        line = list(color = "#2c3e50", width = 1.5),
+        hovertemplate = "Date: %{x}<br>Outright: %{y:.1f}%<extra></extra>"
+      ) |>
+        plotly::add_lines(
+          data = joined, x = ~date, y = ~crack_vol,
+          name = paste0(crack_label, " Crack Vol"),
+          line = list(color = "#e67e22", width = 1.5),
+          hovertemplate = paste0("Date: %{x}<br>", crack_label,
+            " Vol: %{y:.1f}%<extra></extra>")
+        ) |>
+        plotly::layout(
+          xaxis  = list(title = "Date"),
+          yaxis  = list(title = "Annualized Volatility (%)"),
+          legend = list(orientation = "h", x = 0, y = 1.08),
+          annotations = list(list(
+            x = 0.01, y = 0.98, xref = "paper", yref = "paper",
+            text = "Refiners hedge crack spreads, not outright prices \u2014 spread vol spikes on supply disruptions",
+            showarrow = FALSE, font = list(size = 10, color = "grey50"), align = "left"
+          ))
+        )
     })
   })
 }

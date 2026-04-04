@@ -46,7 +46,9 @@ mod_seasonality_ui <- function(id) {
         )
       ),
       shiny::tags$hr(),
-      plotly::plotlyOutput(ns("seas_plot"), height = "calc(100vh - 260px)")
+      plotly::plotlyOutput(ns("seas_plot"), height = "calc(100vh - 260px)"),
+      shiny::tags$hr(),
+      shiny::uiOutput(ns("market_context"))
     )
   )
 }
@@ -54,10 +56,10 @@ mod_seasonality_ui <- function(id) {
 #' seasonality Server Function
 #'
 #' Loads energy data locally and renders seasonality charts.
-#' Does NOT read from or write to `r`.
+#' Reads r$market to sync the market selector.
 #'
 #' @param id Module namespace id.
-#' @param r A `shiny::reactiveValues` object (unused; kept for API consistency).
+#' @param r A `shiny::reactiveValues` object.
 #' @return None.
 #' @export
 mod_seasonality_server <- function(id, r) {
@@ -94,6 +96,11 @@ mod_seasonality_server <- function(id, r) {
         }
       }
     )
+
+    shiny::observeEvent(r$market, {
+      shiny::req(r$market)
+      shiny::updateSelectInput(session, "energy_market", selected = r$market)
+    }, ignoreNULL = TRUE, ignoreInit = TRUE)
 
     # Front-month series derived from selected market (e.g. "CL" -> "CL01")
     series_id <- shiny::reactive({
@@ -332,6 +339,102 @@ mod_seasonality_server <- function(id, r) {
             ))
           )
       }
+    })
+
+    output$market_context <- shiny::renderUI({
+      shiny::req(input$energy_market)
+      mkt <- input$energy_market
+
+      if (mkt == "NG") {
+        bslib::card(
+          bslib::card_header(
+            shiny::tagList(bsicons::bs_icon("thermometer-half"), " Natural Gas \u2014 Storage Cycle")
+          ),
+          bslib::card_body(
+            plotly::plotlyOutput(session$ns("ng_storage_plot"), height = "340px")
+          )
+        )
+
+      } else if (mkt == "HO") {
+        info_text <- "Heating Oil demand follows a pronounced winter seasonal: PADD 1 (US Northeast) consumes 80%+ of distillate fuel for residential and commercial heating. Inventory builds April\u2013September, draws October\u2013March. The Sep/Oct shoulder period often sees sharp calendar spread tightening as refiners shift to winter blend production. Watch for La Ni\u00f1a winters (colder, higher demand) vs. El Ni\u00f1o winters (warmer, lower demand) as the primary seasonal demand modifier."
+        bslib::card(
+          bslib::card_header(
+            shiny::tagList(bsicons::bs_icon("info-circle"), " Market Context: Heating Oil")
+          ),
+          bslib::card_body(shiny::tags$p(class = "text-muted", style = "font-size:0.9rem;", info_text))
+        )
+
+      } else if (mkt == "RB") {
+        info_text <- "RBOB Gasoline has two key seasonal transitions. (1) Winter-to-summer (Mar\u2013May): refiners switch to more expensive summer RVP spec blends, typically widening the M1-M2 spread and lifting front-month prices. (2) Summer driving peak (Jun\u2013Aug): US gasoline demand peaks, supporting prices. (3) Summer-to-winter (Sep\u2013Oct): refiners switch back, often the weakest seasonal period. Export demand to Mexico and Latin America provides a counter-seasonal floor in winter months."
+        bslib::card(
+          bslib::card_header(
+            shiny::tagList(bsicons::bs_icon("info-circle"), " Market Context: RBOB Gasoline")
+          ),
+          bslib::card_body(shiny::tags$p(class = "text-muted", style = "font-size:0.9rem;", info_text))
+        )
+
+      } else {
+        # CL, BRN — no bottom panel
+        NULL
+      }
+    })
+
+    output$ng_storage_plot <- plotly::renderPlotly({
+      shiny::req(energy_data(), input$energy_market == "NG")
+
+      ng_front <- dplyr::filter(energy_data(), .data$series == "NG01") |>
+        dplyr::arrange(date) |>
+        dplyr::filter(!is.na(.data$value))
+
+      shiny::req(nrow(ng_front) > 0)
+
+      start_yr <- as.integer(format(min(ng_front$date), "%Y"))
+      end_yr   <- as.integer(format(max(ng_front$date), "%Y"))
+
+      # Generate per-year injection/withdrawal background shapes
+      shapes <- list()
+      for (yr in start_yr:end_yr) {
+        # Injection season: Apr 1 – Oct 31 (blue tint)
+        shapes <- c(shapes, list(list(
+          type      = "rect",
+          xref      = "x", yref = "paper",
+          x0        = as.character(as.Date(paste0(yr, "-04-01"))),
+          x1        = as.character(as.Date(paste0(yr, "-10-31"))),
+          y0 = 0, y1 = 1,
+          fillcolor = "rgba(52,152,219,0.07)",
+          line      = list(width = 0)
+        )))
+        # Withdrawal season: Nov 1 – Mar 31 next year (red tint)
+        shapes <- c(shapes, list(list(
+          type      = "rect",
+          xref      = "x", yref = "paper",
+          x0        = as.character(as.Date(paste0(yr, "-11-01"))),
+          x1        = as.character(as.Date(paste0(yr + 1, "-03-31"))),
+          y0 = 0, y1 = 1,
+          fillcolor = "rgba(231,76,60,0.07)",
+          line      = list(width = 0)
+        )))
+      }
+
+      plotly::plot_ly(ng_front,
+        x    = ~date, y = ~value,
+        type = "scatter", mode = "lines",
+        name = "NG Front Month",
+        line = list(color = "#2c3e50", width = 1.5),
+        hovertemplate = "Date: %{x|%Y-%m-%d}<br>$%{y:.3f}/MMBtu<extra></extra>"
+      ) |>
+        plotly::layout(
+          title  = "Natural Gas \u2014 Front-Month Price with Storage Cycle",
+          xaxis  = list(title = "Date"),
+          yaxis  = list(title = "Price ($/MMBtu)"),
+          shapes = shapes,
+          legend = list(orientation = "h"),
+          annotations = list(list(
+            x = 0.01, y = 0.98, xref = "paper", yref = "paper",
+            text = "Blue = Injection Season (Apr\u2013Oct, prices tend soft)  |  Red = Withdrawal Season (Nov\u2013Mar, prices firm)",
+            showarrow = FALSE, font = list(size = 10, color = "grey50"), align = "left"
+          ))
+        )
     })
   })
 }

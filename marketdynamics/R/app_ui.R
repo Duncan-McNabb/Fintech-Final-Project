@@ -94,32 +94,41 @@ app_ui <- function(request) {
 
       # ── Analysis Tabs ────────────────────────────────────────────────────────
       bslib::nav_panel(
-        title = shiny::tagList(bsicons::bs_icon("layers"), " Forward Curve"),
+        title = shiny::tagList(bsicons::bs_icon("layers"), " Market Structure"),
         mod_forward_curve_ui("forward_curve_1")
-      ),
-      bslib::nav_panel(
-        title = shiny::tagList(bsicons::bs_icon("bank"), " Treasury Curve"),
-        mod_treasury_curve_ui("treasury_curve_1")
-      ),
-      bslib::nav_panel(
-        title = shiny::tagList(bsicons::bs_icon("activity"), " Volatility"),
-        mod_volatility_ui("volatility_1")
-      ),
-      bslib::nav_panel(
-        title = shiny::tagList(bsicons::bs_icon("arrows-angle-expand"), " Co-Dynamics"),
-        mod_codynamics_ui("codynamics_1")
       ),
       bslib::nav_panel(
         title = shiny::tagList(bsicons::bs_icon("calendar3"), " Seasonality"),
         mod_seasonality_ui("seasonality_1")
       ),
       bslib::nav_panel(
+        title = shiny::tagList(bsicons::bs_icon("activity"), " Volatility"),
+        mod_volatility_ui("volatility_1")
+      ),
+      bslib::nav_panel(
+        title = shiny::tagList(bsicons::bs_icon("arrows-angle-expand"), " Cross-Market"),
+        mod_codynamics_ui("codynamics_1")
+      ),
+      bslib::nav_panel(
         title = shiny::tagList(bsicons::bs_icon("shield-check"), " Hedge Ratios"),
         mod_hedge_ratio_ui("hedge_ratio_1")
       ),
-      bslib::nav_panel(
-        title = shiny::tagList(bsicons::bs_icon("pin-map"), " Specific Info"),
-        mod_specific_info_ui("specific_info_1")
+
+      bslib::nav_spacer(),
+      bslib::nav_item(
+        shiny::selectInput(
+          "global_market",
+          label   = NULL,
+          choices = c(
+            "WTI Crude (CL)"     = "CL",
+            "Brent Crude (BRN)"  = "BRN",
+            "Nat Gas (NG)"       = "NG",
+            "Heating Oil (HO)"   = "HO",
+            "RBOB Gasoline (RB)" = "RB"
+          ),
+          selected = "CL",
+          width    = "155px"
+        )
       )
     )
   )

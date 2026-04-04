@@ -79,7 +79,9 @@ mod_hedge_ratio_ui <- function(id) {
         )
       ),
       shiny::tags$hr(),
-      plotly::plotlyOutput(ns("hr_plot"), height = "calc(100vh - 340px)")
+      plotly::plotlyOutput(ns("hr_plot"), height = "calc(100vh - 340px)"),
+      shiny::tags$hr(),
+      shiny::uiOutput(ns("market_context"))
     )
   )
 }
@@ -87,16 +89,17 @@ mod_hedge_ratio_ui <- function(id) {
 #' hedge_ratio Server Function
 #'
 #' Loads energy + CMT data locally and renders hedge ratio and crack spread charts.
-#' Does NOT read from or write to `r`.
+#' Reads r$market to sync the market selector.
 #'
 #' @param id Module namespace id.
-#' @param r A `shiny::reactiveValues` object (unused; kept for API consistency).
+#' @param r A `shiny::reactiveValues` object.
 #' @return None.
 #' @export
 mod_hedge_ratio_server <- function(id, r) {
   shiny::moduleServer(id, function(input, output, session) {
 
     combined_data <- shiny::reactiveVal(NULL)
+    petro_data    <- shiny::reactiveVal(NULL)
 
     # Primary data load: selected market + CMT
     shiny::observeEvent(
@@ -153,6 +156,30 @@ mod_hedge_ratio_server <- function(id, r) {
         }
       }
     )
+
+    shiny::observeEvent(
+      list(input$energy_market, input$date_range),
+      ignoreNULL = TRUE, ignoreInit = TRUE, {
+        shiny::req(input$energy_market, input$date_range)
+        if (!input$energy_market %in% c("CL", "HO", "RB")) {
+          petro_data(NULL)
+          return()
+        }
+        start <- as.Date(input$date_range[1])
+        end   <- as.Date(input$date_range[2])
+        pd <- tryCatch(
+          load_energy_data(c("CL", "HO", "RB"), start, end) |>
+            dplyr::filter(.data$contract_num == 1),
+          error = function(e) NULL
+        )
+        petro_data(pd)
+      }
+    )
+
+    shiny::observeEvent(r$market, {
+      shiny::req(r$market)
+      shiny::updateSelectInput(session, "energy_market", selected = r$market)
+    }, ignoreNULL = TRUE, ignoreInit = TRUE)
 
     aligned_returns <- shiny::reactive({
       shiny::req(combined_data(), input$exposure, input$hedge)
@@ -265,6 +292,157 @@ mod_hedge_ratio_server <- function(id, r) {
               legend = list(orientation = "h")
             )
         }
+    })
+
+    output$market_context <- shiny::renderUI({
+      shiny::req(input$energy_market)
+      mkt <- input$energy_market
+
+      if (mkt %in% c("CL", "HO", "RB")) {
+        bslib::card(
+          bslib::card_header(
+            shiny::tagList(bsicons::bs_icon("bar-chart-line"), " Refinery Margin Context")
+          ),
+          bslib::card_body(
+            bslib::layout_columns(
+              col_widths = c(6, 6),
+              plotly::plotlyOutput(session$ns("crack_spread_plot"), height = "300px"),
+              plotly::plotlyOutput(session$ns("crack_321_plot"),    height = "300px")
+            )
+          )
+        )
+
+      } else if (mkt == "NG") {
+        info_text <- "Natural gas hedges for utilities and industrial consumers often reference the 'spark spread' \u2014 the margin between power output price and natural gas input cost. For a gas-fired power plant: spark_spread = electricity_price / heat_rate \u2212 gas_price. When spark spreads are wide, utilities lock in gas forward prices; when narrow, they may reduce gas hedging. RTL data does not include power prices, so the spark spread is not directly computable here."
+        bslib::card(
+          bslib::card_header(
+            shiny::tagList(bsicons::bs_icon("info-circle"), " Market Context: Natural Gas")
+          ),
+          bslib::card_body(shiny::tags$p(class = "text-muted", style = "font-size:0.9rem;", info_text))
+        )
+
+      } else if (mkt == "BRN") {
+        info_text <- "WTI-Brent basis risk is a key consideration when hedging Brent-priced crude exposure with NYMEX WTI futures. The spread has historically ranged from -$5 to +$8/bbl. Post-2018, US crude export infrastructure expansion has tightened the spread. A company with Brent-priced crude revenues hedging with CL futures carries residual basis risk equal to the WTI-Brent spread movement."
+        bslib::card(
+          bslib::card_header(
+            shiny::tagList(bsicons::bs_icon("info-circle"), " Market Context: Brent Crude")
+          ),
+          bslib::card_body(shiny::tags$p(class = "text-muted", style = "font-size:0.9rem;", info_text))
+        )
+
+      } else {
+        NULL
+      }
+    })
+
+    output$crack_spread_plot <- plotly::renderPlotly({
+      shiny::req(petro_data())
+      cd <- petro_data()
+
+      cl <- dplyr::filter(cd, .data$market == "CL") |>
+        dplyr::arrange(date) |> dplyr::select(date, value) |> dplyr::rename(cl = value)
+      ho <- dplyr::filter(cd, .data$market == "HO") |>
+        dplyr::arrange(date) |> dplyr::select(date, value) |> dplyr::rename(ho = value)
+      rb <- dplyr::filter(cd, .data$market == "RB") |>
+        dplyr::arrange(date) |> dplyr::select(date, value) |> dplyr::rename(rb = value)
+
+      px <- dplyr::inner_join(cl, ho, by = "date") |>
+        dplyr::inner_join(rb, by = "date") |>
+        dplyr::arrange(date) |>
+        dplyr::mutate(
+          ho_cl = ho * 42 - cl,
+          rb_cl = rb * 42 - cl
+        )
+
+      med_ho <- stats::median(px$ho_cl, na.rm = TRUE)
+      med_rb <- stats::median(px$rb_cl, na.rm = TRUE)
+
+      plotly::plot_ly(px,
+        x    = ~date, y = ~ho_cl,
+        type = "scatter", mode = "lines",
+        name = "HO-CL",
+        line = list(color = "#e74c3c", width = 1.5),
+        hovertemplate = "Date: %{x|%Y-%m-%d}<br>HO-CL: $%{y:.2f}/bbl<extra></extra>"
+      ) |>
+        plotly::add_lines(
+          data = px, x = ~date, y = ~rb_cl, name = "RB-CL",
+          line = list(color = "#2980b9", width = 1.5),
+          hovertemplate = "Date: %{x|%Y-%m-%d}<br>RB-CL: $%{y:.2f}/bbl<extra></extra>"
+        ) |>
+        plotly::add_lines(
+          y = med_ho,
+          line = list(color = "#e74c3c", dash = "dot", width = 1),
+          name = sprintf("HO-CL med ($%.2f)", med_ho),
+          showlegend = TRUE, hoverinfo = "none"
+        ) |>
+        plotly::add_lines(
+          y = med_rb,
+          line = list(color = "#2980b9", dash = "dot", width = 1),
+          name = sprintf("RB-CL med ($%.2f)", med_rb),
+          showlegend = TRUE, hoverinfo = "none"
+        ) |>
+        plotly::layout(
+          xaxis  = list(title = "Date"),
+          yaxis  = list(title = "Crack Spread ($/bbl)"),
+          legend = list(orientation = "h", x = 0, y = 1.08),
+          annotations = list(list(
+            x = 0.01, y = 0.98, xref = "paper", yref = "paper",
+            text = "Refinery margin = refined product price \u2212 crude cost (HO & RB converted to $/bbl)",
+            showarrow = FALSE, font = list(size = 10, color = "grey50"), align = "left"
+          ))
+        )
+    })
+
+    output$crack_321_plot <- plotly::renderPlotly({
+      shiny::req(petro_data())
+      cd <- petro_data()
+
+      cl <- dplyr::filter(cd, .data$market == "CL") |>
+        dplyr::select(date, value) |> dplyr::rename(cl = value)
+      ho <- dplyr::filter(cd, .data$market == "HO") |>
+        dplyr::select(date, value) |> dplyr::rename(ho = value)
+      rb <- dplyr::filter(cd, .data$market == "RB") |>
+        dplyr::select(date, value) |> dplyr::rename(rb = value)
+
+      px <- dplyr::inner_join(cl, ho, by = "date") |>
+        dplyr::inner_join(rb, by = "date") |>
+        dplyr::arrange(date) |>
+        dplyr::mutate(
+          crack_321 = (2 * rb * 42 + 1 * ho * 42 - 3 * cl) / 3
+        )
+
+      med_321 <- stats::median(px$crack_321, na.rm = TRUE)
+      p75_321 <- stats::quantile(px$crack_321, 0.75, na.rm = TRUE)
+
+      plotly::plot_ly(px,
+        x    = ~date, y = ~crack_321,
+        type = "scatter", mode = "lines",
+        name = "3-2-1 Crack",
+        line = list(color = "#8e44ad", width = 1.8),
+        hovertemplate = "Date: %{x|%Y-%m-%d}<br>3-2-1: $%{y:.2f}/bbl<extra></extra>"
+      ) |>
+        plotly::add_lines(
+          y = med_321,
+          line = list(color = "#7f8c8d", dash = "dot", width = 1.2),
+          name = sprintf("Median ($%.2f)", med_321),
+          showlegend = TRUE, hoverinfo = "none"
+        ) |>
+        plotly::add_lines(
+          y = p75_321,
+          line = list(color = "#e67e22", dash = "dot", width = 1.2),
+          name = sprintf("75th pct ($%.2f)", p75_321),
+          showlegend = TRUE, hoverinfo = "none"
+        ) |>
+        plotly::layout(
+          xaxis  = list(title = "Date"),
+          yaxis  = list(title = "3-2-1 Crack ($/bbl)"),
+          legend = list(orientation = "h", x = 0, y = 1.08),
+          annotations = list(list(
+            x = 0.01, y = 0.98, xref = "paper", yref = "paper",
+            text = "(2 \u00d7 RBOB + 1 \u00d7 HO \u2212 3 \u00d7 CL) / 3",
+            showarrow = FALSE, font = list(size = 10, color = "grey50"), align = "left"
+          ))
+        )
     })
   })
 }
