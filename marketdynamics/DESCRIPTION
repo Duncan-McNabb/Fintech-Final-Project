@@ -26,8 +26,6 @@ Imports:
     lubridate (>= 1.9.0),
     stringr (>= 1.5.0),
     zoo (>= 1.8.0),
-    RTL,
-    tidyquant (>= 1.0.0),
     config (>= 0.3.2),
     htmltools (>= 0.5.7),
     arrow (>= 12.0.0)
@@ -35,6 +33,4 @@ Suggests:
     testthat (>= 3.0.0),
     shinytest2,
     withr
-Remotes:
-    patzlaw/RTL
 Config/testthat/edition: 3

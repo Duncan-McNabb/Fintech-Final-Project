@@ -13,8 +13,20 @@ editor: source
 
 ```{r}
 library(RTL)
+library(dplyr)
+library(arrow)
 library(here)
 
+# Export RTL::dflong as feather — same schema as load_energy_data() returns
+df <- RTL::dflong
+df$market       <- sub("[0-9]+$", "", df$series)
+df$contract_num <- as.integer(regmatches(df$series, regexpr("[0-9]+$", df$series)))
+
+# Keep only markets used by the app
+df <- dplyr::filter(df, market %in% c("CL", "BRN", "NG", "HO", "RB"))
+
+arrow::write_feather(df, here::here("marketdynamics/inst/extdata/energy_data.feather"))
+message("Energy data: ", nrow(df), " rows")
 ```
 
 
@@ -87,54 +99,31 @@ library(tidyr)
 library(dplyr)
 library(arrow)
 
-tickers <- c(
-  "DGS1MO", # 1-Month
-  "DGS3MO", # 3-Month
-  "DGS6MO", # 6-Month
-  "DGS1",   # 1-Year
-  "DGS2",   # 2-Year
-  "DGS5",   # 5-Year
-  "DGS7",   # 7-Year
-  "DGS10",  # 10-Year
-  "DGS20",  # 20-Year
-  "DGS30",   # 30-Year
-  "DTWEXBGS" # USD Strength
+cmt_tickers <- c(
+  "DGS1MO", "DGS3MO", "DGS6MO", "DGS1", "DGS2", "DGS3",
+  "DGS5", "DGS7", "DGS10", "DGS20", "DGS30"
 )
 
-from <- "2007-01-02"
+tenor_map <- c(
+  DGS1MO = 1,  DGS3MO = 3,   DGS6MO = 6,
+  DGS1   = 12, DGS2   = 24,  DGS3   = 36,
+  DGS5   = 60, DGS7   = 84,  DGS10  = 120,
+  DGS20  = 240, DGS30 = 360
+)
 
- cmt_data <- tidyquant::tq_get(
-    tickers,
-    get = "economic.data",
-    from = from)
+raw <- tidyquant::tq_get(cmt_tickers, get = "economic.data", from = "1990-01-01")
 
-  dxy_clean <- cmt_data %>%
-    dplyr::filter(symbol == "DTWEXBGS") %>%
-    dplyr::mutate(role = "dxy", maturity = NA_real_, rate = NA_real_) %>%
-    dplyr::select(symbol, date, price, maturity, rate, role)
+# Output schema matches load_cmt_data(): date, series, market, contract_num, value
+cmt_data <- raw |>
+  dplyr::rename(series = symbol, value = price) |>
+  dplyr::mutate(
+    market       = "CMT",
+    contract_num = unname(tenor_map[series])
+  ) |>
+  dplyr::filter(!is.na(value)) |>
+  dplyr::select(date, series, market, contract_num, value)
 
-  cmt_clean <- cmt_data %>%
-    dplyr::filter(symbol != "DTWEXBGS") %>%
-    dplyr::mutate(
-      maturity = case_when(
-        symbol == "DGS1MO" ~ 1/12,
-        symbol == "DGS3MO" ~ 3/12,
-        symbol == "DGS6MO" ~ 6/12,
-        symbol == "DGS1"   ~ 1,
-        symbol == "DGS2"   ~ 2,
-        symbol == "DGS5"   ~ 5,
-        symbol == "DGS7"   ~ 7,
-        symbol == "DGS10"  ~ 10,
-        symbol == "DGS20"  ~ 20,
-        symbol == "DGS30"  ~ 30),
-      rate = price / 100,
-      role = "cmt") %>%
-    tidyr::drop_na()
-
-  fred_data <- dplyr::bind_rows(cmt_clean, dxy_clean)
-
-
-arrow::write_feather(fred_data, here::here("inst/extdata/fred_data.feather"))
-
+arrow::write_feather(cmt_data, here::here("marketdynamics/inst/extdata/cmt_data.feather"))
+message("CMT data: ", nrow(cmt_data), " rows")
 ```
 

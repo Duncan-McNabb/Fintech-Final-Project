@@ -1,20 +1,21 @@
-#' Load energy futures data from RTL::dflong
+#' Load energy futures data from bundled feather file
 #'
-#' Filters the RTL long-format futures dataset by market prefix and date range.
-#' Adds `market` (ticker prefix) and `contract_num` (integer suffix) columns.
+#' Reads the pre-fetched energy futures dataset from
+#' `inst/extdata/energy_data.feather`. Generate this file by running
+#' `fetch_data.qmd` at the project root (requires RTL package locally).
 #'
 #' @param markets Character vector of market prefixes, e.g. `c("CL", "NG")`.
-#'   Available: ALI, AUP, BRN, CL, EDP, HO, HTT, MJP, NG, RB.
+#'   Available: BRN, CL, HO, NG, RB.
 #' @param start_date Date. Start of date range (inclusive).
 #' @param end_date Date. End of date range (inclusive).
 #' @return A tibble with columns: date, series, market, contract_num, value.
 #' @export
 load_energy_data <- function(markets, start_date, end_date) {
-  df <- RTL::dflong
-  df$market       <- sub("[0-9]+$", "", df$series)
-  df$contract_num <- as.integer(
-    regmatches(df$series, regexpr("[0-9]+$", df$series))
-  )
+  path <- system.file("extdata", "energy_data.feather", package = "marketdynamics")
+  if (nchar(path) == 0) {
+    stop("Energy data file not found. Run fetch_data.qmd to generate inst/extdata/energy_data.feather.")
+  }
+  df <- arrow::read_feather(path)
   dplyr::filter(
     df,
     .data$market %in% markets,
@@ -23,11 +24,12 @@ load_energy_data <- function(markets, start_date, end_date) {
   )
 }
 
-#' Load FRED Constant Maturity Treasury data
+#' Load FRED Constant Maturity Treasury data from bundled feather file
 #'
-#' Fetches CMT rate series from FRED via tidyquant. No API key required.
+#' Reads the pre-fetched CMT dataset from `inst/extdata/cmt_data.feather`.
+#' Generate this file by running `fetch_data.qmd` at the project root.
 #'
-#' @param series Character vector of FRED series IDs.
+#' @param series Character vector of FRED series IDs to include.
 #'   Defaults to all CMT tenors: DGS1MO, DGS3MO, DGS6MO, DGS1, DGS2, DGS3,
 #'   DGS5, DGS7, DGS10, DGS20, DGS30.
 #' @param start_date Date. Start of date range. Defaults to 1990-01-01.
@@ -42,30 +44,17 @@ load_cmt_data <- function(
     start_date = as.Date("1990-01-01"),
     end_date   = Sys.Date()
 ) {
-  # Map series ID to tenor in months
-  tenor_map <- c(
-    DGS1MO = 1,  DGS3MO = 3,   DGS6MO = 6,
-    DGS1   = 12, DGS2   = 24,  DGS3   = 36,
-    DGS5   = 60, DGS7   = 84,  DGS10  = 120,
-    DGS20  = 240, DGS30 = 360
+  path <- system.file("extdata", "cmt_data.feather", package = "marketdynamics")
+  if (nchar(path) == 0) {
+    stop("CMT data file not found. Run fetch_data.qmd to generate inst/extdata/cmt_data.feather.")
+  }
+  df <- arrow::read_feather(path)
+  dplyr::filter(
+    df,
+    .data$series %in% series,
+    .data$date >= start_date,
+    .data$date <= end_date
   )
-
-  raw <- tidyquant::tq_get(
-    series,
-    get  = "economic.data",
-    from = start_date,
-    to   = end_date
-  )
-
-  # tq_get returns: symbol, date, price
-  raw |>
-    dplyr::rename(series = symbol, value = price) |>
-    dplyr::mutate(
-      market       = "CMT",
-      contract_num = unname(tenor_map[.data$series])
-    ) |>
-    dplyr::filter(!is.na(.data$value)) |>
-    dplyr::select(date, series, market, contract_num, value)
 }
 
 #' Combine energy and CMT data into a single tibble

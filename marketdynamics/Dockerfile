@@ -1,7 +1,6 @@
 FROM rocker/shiny:4.3.3
 
 # System libraries required by R packages
-# pandoc is required for vignette compilation during GitHub package installs
 RUN apt-get update && apt-get install -y \
     libcurl4-openssl-dev \
     libssl-dev \
@@ -14,28 +13,20 @@ RUN apt-get update && apt-get install -y \
     libtiff5-dev \
     libjpeg-dev \
     libcairo2-dev \
-    pandoc \
     && rm -rf /var/lib/apt/lists/*
 
-# Install remotes first (needed for GitHub packages)
-RUN R -e "install.packages('remotes', repos='https://packagemanager.posit.co/cran/__linux__/jammy/latest')"
+# Set RSPM as the default repo globally (pre-compiled binaries for Ubuntu 22.04)
+RUN echo 'options(repos = c(CRAN = "https://packagemanager.posit.co/cran/__linux__/jammy/latest"))' \
+    >> /usr/local/lib/R/etc/Rprofile.site
 
-# Install CRAN packages via RSPM binary repo (pre-compiled for Ubuntu 22.04 — no source compilation)
+# Install CRAN packages (binary via RSPM — no source compilation)
 RUN R -e "install.packages(c( \
     'shiny', 'golem', 'bslib', 'bsicons', 'plotly', \
     'dplyr', 'tidyr', 'lubridate', 'stringr', 'zoo', \
-    'tidyquant', 'config', 'htmltools', 'arrow' \
-    ), repos='https://packagemanager.posit.co/cran/__linux__/jammy/latest', Ncpus=2)"
+    'config', 'htmltools', 'arrow', 'remotes' \
+    ), Ncpus=2)"
 
-# Install RTL from GitHub
-# - GITHUB_PAT prevents API rate-limit failures on CI
-# - build_vignettes=FALSE skips vignette compilation (pandoc version mismatches)
-# - upgrade='never' prevents re-installing already-present CRAN packages
-ARG GITHUB_PAT
-ENV GITHUB_PAT=${GITHUB_PAT}
-RUN R -e "remotes::install_github('patzlaw/RTL', dependencies=NA, build_vignettes=FALSE, upgrade='never')"
-
-# Copy package source and install it
+# Copy package source (includes inst/extdata/*.feather) and install
 COPY . /app
 RUN R -e "remotes::install_local('/app', dependencies=FALSE)"
 
