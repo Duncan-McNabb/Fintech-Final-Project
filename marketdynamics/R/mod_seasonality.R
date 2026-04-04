@@ -416,25 +416,53 @@ mod_seasonality_server <- function(id, r) {
         )))
       }
 
-      plotly::plot_ly(ng_front,
-        x    = ~date, y = ~value,
-        type = "scatter", mode = "lines",
-        name = "NG Front Month",
-        line = list(color = "#2c3e50", width = 1.5),
-        hovertemplate = "Date: %{x|%Y-%m-%d}<br>$%{y:.3f}/MMBtu<extra></extra>"
-      ) |>
-        plotly::layout(
-          title  = "Natural Gas \u2014 Front-Month Price with Storage Cycle",
-          xaxis  = list(title = "Date"),
-          yaxis  = list(title = "Price ($/MMBtu)"),
-          shapes = shapes,
-          legend = list(orientation = "h"),
-          annotations = list(list(
-            x = 0.01, y = 0.98, xref = "paper", yref = "paper",
-            text = "Blue = Injection Season (Apr\u2013Oct, prices tend soft)  |  Red = Withdrawal Season (Nov\u2013Mar, prices firm)",
-            showarrow = FALSE, font = list(size = 10, color = "grey50"), align = "left"
-          ))
+      p <- plotly::plot_ly(ng_front, x = ~date) |>
+        plotly::add_lines(
+          y             = ~value,
+          name          = "NG Front Month",
+          line          = list(color = "#2c3e50", width = 1.5),
+          hovertemplate = "Date: %{x|%Y-%m-%d}<br>$%{y:.3f}/MMBtu<extra></extra>"
         )
+
+      # Overlay EIA storage level on secondary y-axis
+      eia_ng <- tryCatch(
+        load_eia_data(
+          roles      = "ng_storage",
+          start_date = min(ng_front$date),
+          end_date   = max(ng_front$date)
+        ),
+        error = function(e) NULL
+      )
+
+      if (!is.null(eia_ng) && nrow(eia_ng) > 0) {
+        p <- p |> plotly::add_lines(
+          data          = dplyr::filter(eia_ng, !is.na(.data$value)),
+          x             = ~date,
+          y             = ~value,
+          name          = "US Storage (Bcf)",
+          yaxis         = "y2",
+          line          = list(color = "#2980b9", width = 1.2, dash = "dot"),
+          hovertemplate = "Date: %{x|%Y-%m-%d}<br>Storage: %{y:,.0f} Bcf<extra></extra>"
+        )
+      }
+
+      p |> plotly::layout(
+        title  = "Natural Gas \u2014 Front-Month Price & EIA Storage Level",
+        xaxis  = list(title = "Date"),
+        yaxis  = list(title = "Price ($/MMBtu)"),
+        yaxis2 = list(
+          title      = "US Storage (Bcf)",
+          overlaying = "y", side = "right",
+          showgrid   = FALSE
+        ),
+        shapes = shapes,
+        legend = list(orientation = "h"),
+        annotations = list(list(
+          x = 0.01, y = 0.98, xref = "paper", yref = "paper",
+          text = "Blue = Injection Season (Apr\u2013Oct, prices tend soft)  |  Red = Withdrawal Season (Nov\u2013Mar, prices firm)",
+          showarrow = FALSE, font = list(size = 10, color = "grey50"), align = "left"
+        ))
+      )
     })
   })
 }

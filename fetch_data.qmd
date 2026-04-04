@@ -1,0 +1,140 @@
+---
+title: ""
+author: ""
+format:
+    html:
+      output: false
+editor: source
+---
+
+
+
+
+
+```{r}
+library(RTL)
+library(here)
+
+```
+
+
+
+
+```{r}
+  library(httr)
+  library(jsonlite)
+  library(tibble)
+  library(dplyr)
+  library(lubridate)
+  library(purrr)
+  library(arrow)
+
+  EIAkey <- Sys.getenv("EIA_KEY")
+
+  get_eia_series <- function(series_id, label, role) {
+    url <- paste0("https://api.eia.gov/v2/seriesid/", series_id,
+                  "?api_key=", EIAkey)
+
+    res <- httr::GET(url)
+    js  <- jsonlite::fromJSON(httr::content(res, "text", encoding = "UTF-8"))
+    d   <- js$response$data
+
+    tibble(
+      role  = role,
+      label = label,
+      date  = d$period %>%
+        sub("T.*$", "", .) %>%
+        lubridate::parse_date_time(orders = c("Ymd", "Y-m-d", "Ym", "Y")) %>%
+        as.Date(),
+      value = as.numeric(d$value)
+    ) %>%
+      arrange(date)
+  }
+
+  tickers <- tribble(
+    ~role,                ~series_id,                          ~label,
+    "gasoline_supply",    "PET.WGFRPUS2.W",                   "Gasoline Production (kb/d)",
+    "gasoline_demand",    "PET.WGFUPUS2.W",                   "Gasoline Product Supplied (kb/d)",
+    "crude_stocks",       "PET.WCESTUS1.W",                   "U.S. Crude Stocks (kbbl)",
+    "padd1_crude_stocks", "PET.WCESTP11.W",                   "PADD 1 Crude Stocks (kbbl)",
+    "padd2_crude_stocks", "PET.WCESTP21.W",                   "PADD 2 Crude Stocks (kbbl)",
+    "padd3_crude_stocks", "PET.WCESTP31.W",                   "PADD 3 Crude Stocks (kbbl)",
+    "padd4_crude_stocks", "PET.WCESTP41.W",                   "PADD 4 Crude Stocks (kbbl)",
+    "padd5_crude_stocks", "PET.WCESTP51.W",                   "PADD 5 Crude Stocks (kbbl)",
+    "refinery_runs",      "PET.WGIRIUS2.W",                   "Refinery Runs (kb/d)",
+    "cl_demand",          "PET.WRPUPUS2.W",                   "Total Petroleum Product Supplied (Mbbl/d)",
+    "ho_demand",          "PET.WDIUPUS2.W",                   "Distillate Product Supplied (Mbbl/d)",
+    "rb_exports",         "PET.W_EPM0F_EEX_NUS-Z00_MBBLD.W", "Motor Gasoline Exports (Mbbl/d)",
+    "ng_storage",         "NG.NW2_EPG0_SWO_R48_BCF.W",       "US Natural Gas Storage (Bcf)",
+    "rig_count",          "PET.E_ERTRC_XR0_NUS_C.W",         "Baker Hughes US Rig Count"
+  )
+
+  eia_data <- purrr::pmap_dfr(tickers, function(role, series_id, label) {
+    message("Fetching: ", label)
+    get_eia_series(series_id, label, role)
+  }) %>% 
+    dplyr::filter(date >= as.Date("2007-01-02"))
+
+  arrow::write_feather(eia_data, here::here("inst/extdata/eia_data.feather"))
+
+
+```
+
+
+```{r}
+library(tidyquant)
+library(tidyr)
+library(dplyr)
+library(arrow)
+
+tickers <- c(
+  "DGS1MO", # 1-Month
+  "DGS3MO", # 3-Month
+  "DGS6MO", # 6-Month
+  "DGS1",   # 1-Year
+  "DGS2",   # 2-Year
+  "DGS5",   # 5-Year
+  "DGS7",   # 7-Year
+  "DGS10",  # 10-Year
+  "DGS20",  # 20-Year
+  "DGS30",   # 30-Year
+  "DTWEXBGS" # USD Strength
+)
+
+from <- "2007-01-02"
+
+ cmt_data <- tidyquant::tq_get(
+    tickers,
+    get = "economic.data",
+    from = from)
+
+  dxy_clean <- cmt_data %>%
+    dplyr::filter(symbol == "DTWEXBGS") %>%
+    dplyr::mutate(role = "dxy", maturity = NA_real_, rate = NA_real_) %>%
+    dplyr::select(symbol, date, price, maturity, rate, role)
+
+  cmt_clean <- cmt_data %>%
+    dplyr::filter(symbol != "DTWEXBGS") %>%
+    dplyr::mutate(
+      maturity = case_when(
+        symbol == "DGS1MO" ~ 1/12,
+        symbol == "DGS3MO" ~ 3/12,
+        symbol == "DGS6MO" ~ 6/12,
+        symbol == "DGS1"   ~ 1,
+        symbol == "DGS2"   ~ 2,
+        symbol == "DGS5"   ~ 5,
+        symbol == "DGS7"   ~ 7,
+        symbol == "DGS10"  ~ 10,
+        symbol == "DGS20"  ~ 20,
+        symbol == "DGS30"  ~ 30),
+      rate = price / 100,
+      role = "cmt") %>%
+    tidyr::drop_na()
+
+  fred_data <- dplyr::bind_rows(cmt_clean, dxy_clean)
+
+
+arrow::write_feather(fred_data, here::here("inst/extdata/fred_data.feather"))
+
+```
+

@@ -12,7 +12,7 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: false
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Depends:
     R (>= 4.1.0)
 Imports:
@@ -27,9 +27,10 @@ Imports:
     stringr (>= 1.5.0),
     zoo (>= 1.8.0),
     RTL,
-    fredr (>= 2.1.0),
+    tidyquant (>= 1.0.0),
     config (>= 0.3.2),
-    htmltools (>= 0.5.7)
+    htmltools (>= 0.5.7),
+    arrow (>= 12.0.0)
 Suggests:
     testthat (>= 3.0.0),
     shinytest2,

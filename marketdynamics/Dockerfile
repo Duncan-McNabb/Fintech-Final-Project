@@ -18,14 +18,14 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install remotes first (needed for GitHub packages)
-RUN R -e "install.packages('remotes', repos='https://cran.rstudio.com/')"
+RUN R -e "install.packages('remotes', repos='https://packagemanager.posit.co/cran/__linux__/jammy/latest')"
 
-# Install CRAN packages — separate layer so it caches independently of source code changes
+# Install CRAN packages via RSPM binary repo (pre-compiled for Ubuntu 22.04 — no source compilation)
 RUN R -e "install.packages(c( \
     'shiny', 'golem', 'bslib', 'bsicons', 'plotly', \
     'dplyr', 'tidyr', 'lubridate', 'stringr', 'zoo', \
-    'tidyquant', 'config', 'htmltools' \
-    ), repos='https://cran.rstudio.com/', Ncpus=2)"
+    'tidyquant', 'config', 'htmltools', 'arrow' \
+    ), repos='https://packagemanager.posit.co/cran/__linux__/jammy/latest', Ncpus=2)"
 
 # Install RTL from GitHub
 # - GITHUB_PAT prevents API rate-limit failures on CI

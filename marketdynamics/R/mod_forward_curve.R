@@ -82,8 +82,9 @@ mod_forward_curve_ui <- function(id) {
 mod_forward_curve_server <- function(id, r) {
   shiny::moduleServer(id, function(input, output, session) {
 
-    energy_data  <- shiny::reactiveVal(NULL)
-    cl_brn_data  <- shiny::reactiveVal(NULL)
+    energy_data   <- shiny::reactiveVal(NULL)
+    cl_brn_data   <- shiny::reactiveVal(NULL)
+    cl_stocks_data <- shiny::reactiveVal(NULL)
 
     shiny::observeEvent(
       list(input$energy_market, input$date_range),
@@ -109,6 +110,17 @@ mod_forward_curve_server <- function(id, r) {
         )
 
         energy_data(data)
+
+        # Load EIA crude stocks when WTI is selected
+        if (input$energy_market == "CL") {
+          stocks <- tryCatch(
+            load_eia_data(roles = "crude_stocks", start_date = start, end_date = end),
+            error = function(e) NULL
+          )
+          cl_stocks_data(stocks)
+        } else {
+          cl_stocks_data(NULL)
+        }
 
         if (!is.null(data)) {
           output$load_status <- shiny::renderUI({
@@ -329,12 +341,17 @@ mod_forward_curve_server <- function(id, r) {
       mkt <- input$energy_market
 
       if (mkt == "CL") {
-        info_text <- "WTI Crude is priced at Cushing, Oklahoma \u2014 the physical delivery hub of the NYMEX contract. Curve shape reflects pipeline flows into/out of Cushing: inventory builds \u2192 contango; inventory draws \u2192 backwardation. The Dec/Jan time spread is a key structural trade signal for WTI traders."
         bslib::card(
           bslib::card_header(
-            shiny::tagList(bsicons::bs_icon("info-circle"), " Market Context: WTI Crude")
+            shiny::tagList(bsicons::bs_icon("info-circle"), " Market Context: WTI Crude \u2014 Price vs. US Crude Stocks")
           ),
-          bslib::card_body(shiny::tags$p(class = "text-muted", style = "font-size:0.9rem;", info_text))
+          bslib::card_body(
+            plotly::plotlyOutput(session$ns("cl_stocks_plot"), height = "320px"),
+            shiny::tags$p(
+              class = "text-muted mt-2", style = "font-size:0.9rem;",
+              "Cushing, Oklahoma inventory is the primary driver of WTI curve shape. High stocks \u2192 contango (storage incentive); low stocks \u2192 backwardation (supply squeeze). Stocks axis inverted to illustrate the inverse relationship."
+            )
+          )
         )
 
       } else if (mkt == "BRN") {
@@ -377,6 +394,53 @@ mod_forward_curve_server <- function(id, r) {
       } else {
         NULL
       }
+    })
+
+    output$cl_stocks_plot <- plotly::renderPlotly({
+      shiny::req(cl_stocks_data(), energy_data())
+
+      cl_front <- dplyr::filter(energy_data(), .data$series == "CL01") |>
+        dplyr::arrange(date) |>
+        dplyr::filter(!is.na(.data$value))
+
+      stocks <- dplyr::filter(cl_stocks_data(), !is.na(.data$value)) |>
+        dplyr::arrange(date)
+
+      shiny::req(nrow(cl_front) > 0, nrow(stocks) > 0)
+
+      plotly::plot_ly(cl_front, x = ~date) |>
+        plotly::add_lines(
+          y             = ~value,
+          name          = "WTI Front Month",
+          line          = list(color = "#2c3e50", width = 1.5),
+          hovertemplate = "Date: %{x|%Y-%m-%d}<br>$%{y:.2f}/bbl<extra></extra>"
+        ) |>
+        plotly::add_lines(
+          data          = stocks,
+          x             = ~date,
+          y             = ~value,
+          name          = "US Crude Stocks (kbbl)",
+          yaxis         = "y2",
+          line          = list(color = "#e67e22", width = 1.2, dash = "dot"),
+          hovertemplate = "Date: %{x|%Y-%m-%d}<br>Stocks: %{y:,.0f} kbbl<extra></extra>"
+        ) |>
+        plotly::layout(
+          title  = "WTI Crude \u2014 Front-Month Price vs. US Crude Stocks",
+          xaxis  = list(title = "Date"),
+          yaxis  = list(title = "Price ($/bbl)"),
+          yaxis2 = list(
+            title      = "Crude Stocks (kbbl)",
+            overlaying = "y", side = "right",
+            showgrid   = FALSE,
+            autorange  = "reversed"
+          ),
+          legend = list(orientation = "h", x = 0, y = 1.08),
+          annotations = list(list(
+            x         = 0.01, y = 0.98, xref = "paper", yref = "paper",
+            text      = "Stocks axis inverted \u2014 rising inventory correlates with falling price (contango pressure)",
+            showarrow = FALSE, font = list(size = 10, color = "grey50"), align = "left"
+          ))
+        )
     })
 
     output$wti_brn_plot <- plotly::renderPlotly({
