@@ -45,9 +45,8 @@ mod_volatility_ui <- function(id) {
         shiny::column(8,
           shiny::radioButtons(ns("view_type"), "View",
             choices  = c(
-              "Rolling Vol"     = "rolling",
-              "Term Structure"  = "term",
-              "Crack Spread Vol" = "crack"
+              "Rolling Vol"    = "rolling",
+              "Term Structure" = "term"
             ),
             inline   = TRUE,
             selected = "rolling")
@@ -72,7 +71,6 @@ mod_volatility_server <- function(id, r) {
   shiny::moduleServer(id, function(input, output, session) {
 
     energy_data  <- shiny::reactiveVal(NULL)
-    crack_data   <- shiny::reactiveVal(NULL)   # CL + HO + RB front months
 
     # Primary market data load
     shiny::observeEvent(
@@ -98,7 +96,6 @@ mod_volatility_server <- function(id, r) {
         )
 
         energy_data(data)
-        crack_data(NULL)   # reset crack data on market/date change
 
         if (!is.null(data)) {
           choices <- sort(unique(data$series))
@@ -106,26 +103,6 @@ mod_volatility_server <- function(id, r) {
             choices = choices, selected = choices[1])
           output$load_status <- shiny::renderUI({ NULL })
         }
-      }
-    )
-
-    # Crack data load — triggered when crack view is selected or date/market changes
-    shiny::observeEvent(
-      list(input$view_type, input$date_range, input$energy_market),
-      ignoreNULL = TRUE, ignoreInit = TRUE, {
-        shiny::req(input$view_type, input$date_range, input$energy_market)
-        if (input$view_type != "crack") return()
-        if (!input$energy_market %in% c("CL", "HO", "RB")) return()
-
-        start <- as.Date(input$date_range[1])
-        end   <- as.Date(input$date_range[2])
-
-        data <- tryCatch(
-          load_energy_data(c("CL", "HO", "RB"), start, end) |>
-            dplyr::filter(.data$contract_num == 1),
-          error = function(e) NULL
-        )
-        crack_data(data)
       }
     )
 
@@ -243,113 +220,6 @@ mod_volatility_server <- function(id, r) {
           ))
         )
 
-      } else {
-        # Crack Spread Vol — petroleum markets only
-        if (!input$energy_market %in% c("CL", "HO", "RB")) {
-          return(
-            plotly::plot_ly() |>
-              plotly::layout(
-                title = "Crack Spread Vol is only available for CL, HO, and RB markets",
-                xaxis = list(visible = FALSE),
-                yaxis = list(visible = FALSE)
-              )
-          )
-        }
-
-        shiny::req(crack_data())
-        cd <- crack_data()
-
-        # Build front-month price series for CL, HO, RB
-        cl_px <- dplyr::filter(cd, .data$market == "CL") |>
-          dplyr::arrange(.data$date) |>
-          dplyr::select(date, value) |>
-          dplyr::rename(cl = value)
-        ho_px <- dplyr::filter(cd, .data$market == "HO") |>
-          dplyr::arrange(.data$date) |>
-          dplyr::select(date, value) |>
-          dplyr::rename(ho = value)
-        rb_px <- dplyr::filter(cd, .data$market == "RB") |>
-          dplyr::arrange(.data$date) |>
-          dplyr::select(date, value) |>
-          dplyr::rename(rb = value)
-
-        # Align all three by date
-        px_wide <- dplyr::inner_join(cl_px, ho_px, by = "date") |>
-          dplyr::inner_join(rb_px, by = "date") |>
-          dplyr::arrange(date) |>
-          dplyr::mutate(
-            # HO and RB are in $/gallon; CL is in $/bbl — convert to $/bbl for spreads
-            ho_bbl    = ho * 42,
-            rb_bbl    = rb * 42,
-            ho_cl_spd = ho_bbl - cl,
-            rb_cl_spd = rb_bbl - cl
-          )
-
-        # Outright front-month vol for selected market
-        market_front_series <- paste0(input$energy_market, "01")
-        outright_ser <- dplyr::filter(returns_data(),
-          .data$series == market_front_series) |>
-          dplyr::arrange(.data$date)
-
-        outright_vol_df <- outright_ser |>
-          dplyr::mutate(
-            vol = compute_rolling_vol(.data$log_return, window = input$vol_window) * 100
-          ) |>
-          dplyr::filter(!is.na(.data$vol)) |>
-          dplyr::select(date, vol)
-
-        # Crack spread vol — use simple % return since spread can go negative
-        crack_col <- if (input$energy_market %in% c("CL", "HO")) "ho_cl_spd" else "rb_cl_spd"
-        crack_label <- if (input$energy_market %in% c("CL", "HO")) "HO-CL" else "RB-CL"
-
-        crack_vol_df <- px_wide |>
-          dplyr::mutate(
-            spd_return  = (.data[[crack_col]] - dplyr::lag(.data[[crack_col]])) /
-                          abs(dplyr::lag(.data[[crack_col]])),
-            crack_vol   = zoo::rollapply(
-              .data$spd_return, width = input$vol_window,
-              FUN = function(x) stats::sd(x, na.rm = TRUE) * sqrt(252) * 100,
-              fill = NA, align = "right"
-            )
-          ) |>
-          dplyr::filter(!is.na(.data$crack_vol)) |>
-          dplyr::select(date, crack_vol)
-
-        joined_vol <- dplyr::inner_join(outright_vol_df, crack_vol_df, by = "date")
-
-        shiny::req(nrow(joined_vol) > 0)
-
-        plotly::plot_ly(joined_vol,
-          x    = ~date,
-          y    = ~vol,
-          type = "scatter",
-          mode = "lines",
-          name = paste0(input$energy_market, " Outright Vol"),
-          line = list(color = "#2c3e50", width = 1.5),
-          hovertemplate = "Date: %{x}<br>Outright Vol: %{y:.1f}%<extra></extra>"
-        ) |>
-          plotly::add_lines(
-            data          = joined_vol,
-            x             = ~date,
-            y             = ~crack_vol,
-            name          = paste0(crack_label, " Crack Vol"),
-            line          = list(color = "#e67e22", width = 1.5),
-            hovertemplate = paste0("Date: %{x}<br>", crack_label, " Vol: %{y:.1f}%<extra></extra>")
-          ) |>
-          plotly::layout(
-            title  = paste0(market_label(), " \u2014 Outright vs. ",
-              crack_label, " Crack Spread Volatility"),
-            xaxis  = list(title = "Date"),
-            yaxis  = list(title = "Annualized Volatility (%)"),
-            legend = list(orientation = "h", x = 0, y = 1.08),
-            annotations = list(list(
-              x = 0.01, y = 0.98, xref = "paper", yref = "paper",
-              text = "Refiners hedge crack spreads, not outright prices \u2014 spread vol spikes on supply disruptions",
-              showarrow = FALSE,
-              font = list(size = 10, color = "grey50"),
-              align = "left"
-            ))
-          )
       }
     })
   })

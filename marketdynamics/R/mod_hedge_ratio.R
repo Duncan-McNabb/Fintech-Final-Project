@@ -71,10 +71,8 @@ mod_hedge_ratio_ui <- function(id) {
         shiny::column(3,
           shiny::radioButtons(ns("view_type"), "View",
             choices  = c(
-              "Rolling HR"   = "rolling",
-              "Scatter"      = "scatter",
-              "Crack Spreads" = "crack",
-              "3-2-1 Crack"  = "crack321"
+              "Rolling HR" = "rolling",
+              "Scatter"    = "scatter"
             ),
             inline   = TRUE,
             selected = "rolling")
@@ -99,7 +97,6 @@ mod_hedge_ratio_server <- function(id, r) {
   shiny::moduleServer(id, function(input, output, session) {
 
     combined_data <- shiny::reactiveVal(NULL)
-    crack_data    <- shiny::reactiveVal(NULL)   # CL + HO + RB front months only
 
     # Primary data load: selected market + CMT
     shiny::observeEvent(
@@ -132,7 +129,6 @@ mod_hedge_ratio_server <- function(id, r) {
         }
 
         combined_data(combined)
-        crack_data(NULL)   # reset on market/date change
 
         if (!is.null(combined)) {
           energy_front <- combined |>
@@ -155,25 +151,6 @@ mod_hedge_ratio_server <- function(id, r) {
             shiny::tags$small(class = "text-danger", "Error loading data")
           })
         }
-      }
-    )
-
-    # Crack data load — triggered when crack views are selected or date changes
-    shiny::observeEvent(
-      list(input$view_type, input$date_range),
-      ignoreNULL = TRUE, ignoreInit = TRUE, {
-        shiny::req(input$view_type, input$date_range)
-        if (!input$view_type %in% c("crack", "crack321")) return()
-
-        start <- as.Date(input$date_range[1])
-        end   <- as.Date(input$date_range[2])
-
-        data <- tryCatch(
-          load_energy_data(c("CL", "HO", "RB"), start, end) |>
-            dplyr::filter(.data$contract_num == 1),
-          error = function(e) NULL
-        )
-        crack_data(data)
       }
     )
 
@@ -213,132 +190,7 @@ mod_hedge_ratio_server <- function(id, r) {
     })
 
     output$hr_plot <- plotly::renderPlotly({
-      shiny::req(input$view_type)
-
-      if (input$view_type == "crack") {
-        shiny::req(crack_data())
-        cd <- crack_data()
-
-        # Align CL, HO, RB by date
-        cl <- dplyr::filter(cd, .data$market == "CL") |>
-          dplyr::select(date, value) |> dplyr::rename(cl = value)
-        ho <- dplyr::filter(cd, .data$market == "HO") |>
-          dplyr::select(date, value) |> dplyr::rename(ho = value)
-        rb <- dplyr::filter(cd, .data$market == "RB") |>
-          dplyr::select(date, value) |> dplyr::rename(rb = value)
-
-        px <- dplyr::inner_join(cl, ho, by = "date") |>
-          dplyr::inner_join(rb, by = "date") |>
-          dplyr::arrange(date) |>
-          dplyr::mutate(
-            # Convert HO and RB from $/gallon to $/bbl (× 42)
-            ho_cl = ho * 42 - cl,
-            rb_cl = rb * 42 - cl
-          )
-
-        med_ho <- stats::median(px$ho_cl, na.rm = TRUE)
-        med_rb <- stats::median(px$rb_cl, na.rm = TRUE)
-
-        plotly::plot_ly(px,
-          x    = ~date,
-          y    = ~ho_cl,
-          type = "scatter",
-          mode = "lines",
-          name = "HO-CL",
-          line = list(color = "#e74c3c", width = 1.5),
-          hovertemplate = "Date: %{x|%Y-%m-%d}<br>HO-CL: $%{y:.2f}/bbl<extra></extra>"
-        ) |>
-          plotly::add_lines(
-            data          = px,
-            x             = ~date,
-            y             = ~rb_cl,
-            name          = "RB-CL",
-            line          = list(color = "#2980b9", width = 1.5),
-            hovertemplate = "Date: %{x|%Y-%m-%d}<br>RB-CL: $%{y:.2f}/bbl<extra></extra>"
-          ) |>
-          plotly::add_lines(
-            y = med_ho, line = list(color = "#e74c3c", dash = "dot", width = 1),
-            name = sprintf("HO-CL median ($%.2f)", med_ho),
-            showlegend = TRUE, hoverinfo = "none"
-          ) |>
-          plotly::add_lines(
-            y = med_rb, line = list(color = "#2980b9", dash = "dot", width = 1),
-            name = sprintf("RB-CL median ($%.2f)", med_rb),
-            showlegend = TRUE, hoverinfo = "none"
-          ) |>
-          plotly::layout(
-            title  = "HO-CL and RB-CL Crack Spreads \u2014 Refinery Margins",
-            xaxis  = list(title = "Date"),
-            yaxis  = list(title = "Crack Spread ($/bbl)"),
-            legend = list(orientation = "h", x = 0, y = 1.08),
-            annotations = list(list(
-              x = 0.01, y = 0.98, xref = "paper", yref = "paper",
-              text = "Refinery margin = product price minus crude cost",
-              showarrow = FALSE,
-              font = list(size = 10, color = "grey50"),
-              align = "left"
-            ))
-          )
-
-      } else if (input$view_type == "crack321") {
-        shiny::req(crack_data())
-        cd <- crack_data()
-
-        cl <- dplyr::filter(cd, .data$market == "CL") |>
-          dplyr::select(date, value) |> dplyr::rename(cl = value)
-        ho <- dplyr::filter(cd, .data$market == "HO") |>
-          dplyr::select(date, value) |> dplyr::rename(ho = value)
-        rb <- dplyr::filter(cd, .data$market == "RB") |>
-          dplyr::select(date, value) |> dplyr::rename(rb = value)
-
-        px <- dplyr::inner_join(cl, ho, by = "date") |>
-          dplyr::inner_join(rb, by = "date") |>
-          dplyr::arrange(date) |>
-          dplyr::mutate(
-            # 3-2-1 crack: (2 × RB_bbl + 1 × HO_bbl − 3 × CL) / 3
-            crack_321 = (2 * rb * 42 + 1 * ho * 42 - 3 * cl) / 3
-          )
-
-        med_321  <- stats::median(px$crack_321, na.rm = TRUE)
-        p75_321  <- stats::quantile(px$crack_321, 0.75, na.rm = TRUE)
-
-        plotly::plot_ly(px,
-          x    = ~date,
-          y    = ~crack_321,
-          type = "scatter",
-          mode = "lines",
-          name = "3-2-1 Crack",
-          line = list(color = "#8e44ad", width = 1.8),
-          hovertemplate = "Date: %{x|%Y-%m-%d}<br>3-2-1 Crack: $%{y:.2f}/bbl<extra></extra>"
-        ) |>
-          plotly::add_lines(
-            y = med_321,
-            line = list(color = "#7f8c8d", dash = "dot", width = 1.2),
-            name = sprintf("Median ($%.2f)", med_321),
-            showlegend = TRUE, hoverinfo = "none"
-          ) |>
-          plotly::add_lines(
-            y = p75_321,
-            line = list(color = "#e67e22", dash = "dot", width = 1.2),
-            name = sprintf("75th pct ($%.2f)", p75_321),
-            showlegend = TRUE, hoverinfo = "none"
-          ) |>
-          plotly::layout(
-            title  = "3-2-1 Crack Spread \u2014 Industry-Standard Refinery Margin",
-            xaxis  = list(title = "Date"),
-            yaxis  = list(title = "3-2-1 Crack Spread ($/bbl)"),
-            legend = list(orientation = "h", x = 0, y = 1.08),
-            annotations = list(list(
-              x = 0.01, y = 0.98, xref = "paper", yref = "paper",
-              text = "(2 \u00d7 RBOB + 1 \u00d7 HO \u2212 3 \u00d7 CL) / 3 | converts HO and RB from $/gal to $/bbl",
-              showarrow = FALSE,
-              font = list(size = 10, color = "grey50"),
-              align = "left"
-            ))
-          )
-
-      } else {
-        shiny::req(aligned_returns(), hedge_ratio())
+      shiny::req(input$view_type, aligned_returns(), hedge_ratio())
 
         ar <- aligned_returns()
         hr <- hedge_ratio()
@@ -413,7 +265,6 @@ mod_hedge_ratio_server <- function(id, r) {
               legend = list(orientation = "h")
             )
         }
-      }
     })
   })
 }
