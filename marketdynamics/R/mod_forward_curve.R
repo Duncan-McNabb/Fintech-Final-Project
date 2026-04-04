@@ -6,164 +6,234 @@
 mod_forward_curve_ui <- function(id) {
   ns <- NS(id)
 
-  tagList(
-    shiny::fluidRow(
-      shiny::column(4,
-        shiny::selectInput(ns("market"), "Market", choices = NULL)
-      ),
-      shiny::column(4,
-        shiny::sliderInput(ns("n_curves"), "Curve Snapshots",
-          min = 10, max = 104, value = 52, step = 1)
-      ),
-      shiny::column(4,
-        shiny::radioButtons(ns("view_type"), "View",
-          choices  = c("Curve Snapshots" = "snapshots", "Price Heatmap" = "heatmap"),
-          inline   = TRUE,
-          selected = "snapshots"
+  energy_markets <- c(
+    "WTI Crude (CL)"     = "CL",
+    "Brent Crude (BRN)"  = "BRN",
+    "Natural Gas (NG)"   = "NG",
+    "Heating Oil (HO)"   = "HO",
+    "RBOB Gasoline (RB)" = "RB"
+  )
+
+  bslib::card(
+    full_screen = TRUE,
+    bslib::card_header(
+      shiny::tagList(bsicons::bs_icon("layers"), " Forward Curve Dynamics")
+    ),
+    bslib::card_body(
+      shiny::fluidRow(
+        shiny::column(3,
+          shiny::selectInput(ns("energy_market"), "Energy Market",
+            choices = energy_markets, selected = "CL")
+        ),
+        shiny::column(4,
+          shiny::dateRangeInput(ns("date_range"), "Date Range",
+            start = "2007-01-02", end = Sys.Date(),
+            min   = "2007-01-02", max = Sys.Date())
+        ),
+        shiny::column(3,
+          shiny::radioButtons(ns("view_type"), "View",
+            choices  = c(
+              "Curve Lines"     = "curves",
+              "Calendar Spread" = "spread"
+            ),
+            inline   = TRUE,
+            selected = "curves")
+        ),
+        shiny::column(2,
+          shiny::tags$div(class = "mt-4", shiny::uiOutput(ns("load_status")))
         )
-      )
-    ),
-    shiny::fluidRow(
-      shiny::column(4, bslib::value_box(
-        title    = "Front Month Price",
-        value    = shiny::uiOutput(ns("vb_front_price")),
-        showcase = bsicons::bs_icon("currency-dollar"),
-        theme    = "primary"
-      )),
-      shiny::column(4, bslib::value_box(
-        title    = "M2 - M1 Roll Yield",
-        value    = shiny::uiOutput(ns("vb_roll_yield")),
-        showcase = bsicons::bs_icon("arrow-left-right"),
-        theme    = "secondary"
-      )),
-      shiny::column(4, bslib::value_box(
-        title    = "Curve Shape",
-        value    = shiny::uiOutput(ns("vb_shape")),
-        showcase = bsicons::bs_icon("graph-up"),
-        theme    = "info"
-      ))
-    ),
-    plotly::plotlyOutput(ns("curve_plot"), height = "500px")
+      ),
+      shiny::tags$hr(),
+      plotly::plotlyOutput(ns("curve_plot"), height = "calc(100vh - 260px)")
+    )
   )
 }
 
 #' forward_curve Server Function
 #'
-#' Reads from `r$energy_long` and `r$selected_energy`. Does NOT write to `r`.
+#' Loads energy data locally and renders forward curve charts.
+#' Does NOT read from or write to `r`.
 #'
 #' @param id Module namespace id.
-#' @param r A `shiny::reactiveValues` object created in `app_server`.
+#' @param r A `shiny::reactiveValues` object (unused; kept for API consistency).
 #' @return None.
 #' @export
 mod_forward_curve_server <- function(id, r) {
   shiny::moduleServer(id, function(input, output, session) {
 
-    # Keep market selector in sync with sidebar selections
-    shiny::observe({
-      shiny::req(r$selected_energy)
-      shiny::updateSelectInput(session, "market", choices = r$selected_energy,
-        selected = r$selected_energy[1])
-    })
+    energy_data <- shiny::reactiveVal(NULL)
 
-    # Wide format: date + one column per contract number (c1, c2, ...)
+    shiny::observeEvent(
+      list(input$energy_market, input$date_range),
+      ignoreNULL = TRUE, ignoreInit = FALSE, {
+        shiny::req(input$energy_market, input$date_range)
+
+        output$load_status <- shiny::renderUI({
+          shiny::tags$small(class = "text-muted", "Loading...")
+        })
+
+        start <- as.Date(input$date_range[1])
+        end   <- as.Date(input$date_range[2])
+
+        data <- tryCatch(
+          load_energy_data(input$energy_market, start, end),
+          error = function(e) {
+            output$load_status <- shiny::renderUI({
+              shiny::tags$small(class = "text-danger",
+                paste("Error:", conditionMessage(e)))
+            })
+            NULL
+          }
+        )
+
+        energy_data(data)
+
+        if (!is.null(data)) {
+          output$load_status <- shiny::renderUI({
+            shiny::tags$small(class = "text-success",
+              format(nrow(data), big.mark = ","), " rows loaded")
+          })
+        }
+      }
+    )
+
     curve_data <- shiny::reactive({
-      shiny::req(r$energy_long, input$market)
-      pivot_wide(r$energy_long, input$market)
+      shiny::req(energy_data(), input$energy_market)
+      pivot_wide(energy_data(), input$energy_market)
     })
 
-    # Latest row for value box computations
-    latest <- shiny::reactive({
-      shiny::req(curve_data())
-      cd <- curve_data()
-      cd[which.max(cd$date), ]
-    })
-
-    output$vb_front_price <- shiny::renderUI({
-      shiny::req(latest())
-      row <- latest()
-      val <- if ("c1" %in% names(row)) round(row[["c1"]], 2) else NA
-      shiny::tags$span(format(val, big.mark = ","))
-    })
-
-    output$vb_roll_yield <- shiny::renderUI({
-      shiny::req(latest())
-      row <- latest()
-      if (all(c("c1", "c2") %in% names(row)) && !is.na(row[["c1"]]) && row[["c1"]] != 0) {
-        ry <- (row[["c2"]] - row[["c1"]]) / row[["c1"]] * 100
-        shiny::tags$span(sprintf("%.2f%%", ry))
-      } else {
-        shiny::tags$span("N/A")
-      }
-    })
-
-    output$vb_shape <- shiny::renderUI({
-      shiny::req(latest())
-      row <- latest()
-      if (all(c("c1", "c2") %in% names(row)) && !is.na(row[["c1"]]) && row[["c1"]] != 0) {
-        ry <- (row[["c2"]] - row[["c1"]]) / row[["c1"]] * 100
-        label <- if (ry > 0) "Contango" else "Backwardation"
-        shiny::tags$span(label)
-      } else {
-        shiny::tags$span("N/A")
-      }
+    market_label <- shiny::reactive({
+      labels <- c(CL = "WTI Crude", BRN = "Brent Crude", NG = "Natural Gas",
+                  HO = "Heating Oil", RB = "RBOB Gasoline")
+      unname(labels[input$energy_market])
     })
 
     output$curve_plot <- plotly::renderPlotly({
       shiny::req(curve_data(), input$view_type)
       cd <- curve_data()
 
-      # Drop date column to get numeric contract columns
-      contract_cols <- setdiff(names(cd), "date")
-      contract_nums <- as.integer(sub("^c", "", contract_cols))
+      if (input$view_type == "spread") {
+        # Calendar spread: M1 - M2
+        shiny::req("c1" %in% names(cd), "c2" %in% names(cd))
 
-      if (input$view_type == "snapshots") {
-        # Sample n_curves evenly-spaced rows
-        n      <- min(input$n_curves, nrow(cd))
-        idx    <- round(seq(1, nrow(cd), length.out = n))
-        sample <- cd[idx, ]
+        spread_df <- dplyr::tibble(
+          date   = cd$date,
+          spread = cd$c1 - cd$c2
+        ) |>
+          dplyr::filter(!is.na(spread))
 
-        # Color palette mapped to date index
-        pal  <- grDevices::colorRampPalette(c("#440154", "#31688e", "#35b779", "#fde725"))(n)
+        y_max  <- max(spread_df$spread, na.rm = TRUE)
+        y_min  <- min(spread_df$spread, na.rm = TRUE)
+        y_pad  <- (y_max - y_min) * 0.05
+        median_spread <- stats::median(spread_df$spread, na.rm = TRUE)
 
-        p <- plotly::plot_ly()
-        for (i in seq_len(nrow(sample))) {
-          prices <- as.numeric(sample[i, contract_cols])
-          p <- plotly::add_lines(p,
-            x    = contract_nums,
-            y    = prices,
-            name = as.character(sample$date[i]),
-            line = list(color = pal[i], width = 1),
-            showlegend = FALSE,
-            hovertemplate = paste0(
-              "Date: ", sample$date[i],
-              "<br>Contract: %{x}<br>Price: $%{y:.2f}<extra></extra>"
-            )
+        # Background shading shapes: green above 0 (backwardation), red below 0 (contango)
+        bg_shapes <- list(
+          list(
+            type    = "rect",
+            xref    = "paper", yref = "y",
+            x0 = 0, x1 = 1, y0 = 0, y1 = y_max + y_pad,
+            fillcolor = "rgba(39,174,96,0.07)",
+            line      = list(width = 0)
+          ),
+          list(
+            type    = "rect",
+            xref    = "paper", yref = "y",
+            x0 = 0, x1 = 1, y0 = y_min - y_pad, y1 = 0,
+            fillcolor = "rgba(231,76,60,0.07)",
+            line      = list(width = 0)
           )
-        }
-        p |>
+        )
+
+        plotly::plot_ly(spread_df,
+          x    = ~date,
+          y    = ~spread,
+          type = "scatter",
+          mode = "lines",
+          name = "M1-M2 Spread",
+          line = list(color = "#2c3e50", width = 1.5),
+          hovertemplate = "Date: %{x|%Y-%m-%d}<br>Spread: $%{y:.3f}<extra></extra>"
+        ) |>
+          plotly::add_lines(
+            y          = 0,
+            line       = list(color = "grey40", dash = "dash", width = 1),
+            showlegend = FALSE,
+            hoverinfo  = "none"
+          ) |>
+          plotly::add_lines(
+            y          = median_spread,
+            line       = list(color = "#e67e22", dash = "dot", width = 1.2),
+            name       = sprintf("Median ($%.3f)", median_spread),
+            showlegend = TRUE,
+            hoverinfo  = "none"
+          ) |>
           plotly::layout(
-            title  = paste(input$market, "Forward Curve Snapshots"),
-            xaxis  = list(title = "Contract Month"),
-            yaxis  = list(title = "Price"),
-            hovermode = "closest"
+            title  = paste0(market_label(),
+              " — M1-M2 Calendar Spread (Backwardation = green / Contango = red)"),
+            xaxis  = list(title = "Date"),
+            yaxis  = list(title = "M1 \u2212 M2 Spread ($/unit)"),
+            shapes = bg_shapes,
+            legend = list(orientation = "h", x = 0, y = 1.08),
+            annotations = list(list(
+              x = 0.01, y = 0.98, xref = "paper", yref = "paper",
+              text      = "Above 0 = Backwardation (supply tight)   Below 0 = Contango (supply ample)",
+              showarrow = FALSE,
+              font      = list(size = 10, color = "grey50"),
+              align     = "left"
+            ))
           )
 
       } else {
-        # Heatmap: x=date, y=contract number, z=price
-        z_mat <- t(as.matrix(cd[, contract_cols]))
-        plotly::plot_ly(
-          x          = cd$date,
-          y          = contract_cols,
-          z          = z_mat,
-          type       = "heatmap",
-          colorscale = "Viridis",
-          hovertemplate = "Date: %{x}<br>Contract: %{y}<br>Price: $%{z:.2f}<extra></extra>"
-        ) |>
-          plotly::layout(
-            title  = paste(input$market, "Price Heatmap"),
-            xaxis  = list(title = "Date"),
-            yaxis  = list(title = "Contract Month", autorange = "reversed")
+        # Default: multi-line forward curve
+        contract_cols <- setdiff(names(cd), "date")
+        contract_nums <- as.integer(sub("^c", "", contract_cols))
+
+        n_contracts <- length(contract_cols)
+        pal <- grDevices::colorRampPalette(
+          c("#440154", "#31688e", "#35b779", "#fde725")
+        )(max(n_contracts - 1, 1))
+
+        p <- plotly::plot_ly()
+
+        # Pass 1: all visual lines, no tooltip contribution
+        for (i in seq_along(contract_cols)) {
+          col      <- contract_cols[i]
+          is_front <- col == "c1"
+          p <- plotly::add_lines(p,
+            x          = cd$date,
+            y          = cd[[col]],
+            name       = if (is_front) "Front Month" else paste("Contract", contract_nums[i]),
+            line       = list(
+              color = if (is_front) "black" else pal[max(i - 1, 1)],
+              width = if (is_front) 2.5 else 0.8
+            ),
+            showlegend = is_front,
+            hoverinfo  = "none"
           )
+        }
+
+        # Pass 2: invisible ghost traces for 6 benchmark contracts — supply tooltip
+        benchmark_nums <- c(1, 6, 12, 18, 24, 36)
+        benchmark_cols <- paste0("c", benchmark_nums[benchmark_nums %in% contract_nums])
+        for (col in benchmark_cols) {
+          cnum <- as.integer(sub("^c", "", col))
+          p <- plotly::add_lines(p,
+            x             = cd$date,
+            y             = cd[[col]],
+            name          = if (cnum == 1) "Front (c1)" else paste0("c", cnum),
+            line          = list(width = 0, color = "rgba(0,0,0,0)"),
+            showlegend    = FALSE,
+            hovertemplate = paste0("c", cnum, " \u2014 %{x|%Y-%m-%d}: $%{y:.2f}<extra></extra>")
+          )
+        }
+
+        p |> plotly::layout(
+          title     = paste(market_label(), "\u2014 Forward Curve Dynamics"),
+          xaxis     = list(title = "Date"),
+          yaxis     = list(title = "Price ($/unit)"),
+          hovermode = "x unified",
+          legend    = list(orientation = "h", x = 0, y = 1.08)
+        )
       }
     })
   })
