@@ -14,42 +14,45 @@ mod_seasonality_ui <- function(id) {
     "RBOB Gasoline (RB)" = "RB"
   )
 
-  bslib::card(
-    full_screen = TRUE,
-    bslib::card_header(
-      shiny::tagList(bsicons::bs_icon("calendar3"), " Seasonality Patterns")
-    ),
-    bslib::card_body(
-      shiny::fluidRow(
-        shiny::column(3,
-          shiny::selectInput(ns("energy_market"), "Energy Market",
-            choices = energy_markets, selected = "CL")
-        ),
-        shiny::column(4,
-          shiny::dateRangeInput(ns("date_range"), "Date Range",
-            start = "2007-01-02", end = Sys.Date(),
-            min   = "2007-01-02", max = Sys.Date())
-        ),
-        shiny::column(3,
-          shiny::radioButtons(ns("view_type"), "View",
-            choices  = c(
-              "Monthly Returns"      = "monthly",
-              "Year Overlay"         = "overlay",
-              "Seasonal Vol"         = "vol",
-              "Calendar Spread"      = "cal_spread"
-            ),
-            inline   = TRUE,
-            selected = "monthly")
-        ),
-        shiny::column(2,
-          shiny::tags$div(class = "mt-4", shiny::uiOutput(ns("load_status")))
-        )
+  shiny::tagList(
+    bslib::card(
+      bslib::card_header(
+        shiny::tagList(bsicons::bs_icon("calendar3"), " Seasonality Patterns")
       ),
-      shiny::tags$hr(),
-      plotly::plotlyOutput(ns("seas_plot"), height = "calc(100vh - 260px)"),
-      shiny::tags$hr(),
-      shiny::uiOutput(ns("market_context"))
-    )
+      bslib::card_body(
+        shiny::fluidRow(
+          shiny::column(3,
+            shiny::selectInput(ns("energy_market"), "Energy Market",
+              choices = energy_markets, selected = "CL")
+          ),
+          shiny::column(4,
+            shiny::dateRangeInput(ns("date_range"), "Date Range",
+              start = "2007-01-02", end = Sys.Date(),
+              min   = "2007-01-02", max = Sys.Date())
+          ),
+          shiny::column(3,
+            shiny::radioButtons(ns("view_type"), "View",
+              choices  = c(
+                "Monthly Returns"      = "monthly",
+                "Year Overlay"         = "overlay",
+                "Seasonal Vol"         = "vol",
+                "Calendar Spread"      = "cal_spread"
+              ),
+              inline   = TRUE,
+              selected = "monthly")
+          ),
+          shiny::column(2,
+            shiny::tags$div(class = "mt-4", shiny::uiOutput(ns("load_status")))
+          )
+        )
+      )
+    ),
+    bslib::card(
+      bslib::card_body(
+        plotly::plotlyOutput(ns("seas_plot"), height = "50vh")
+      )
+    ),
+    shiny::uiOutput(ns("market_context"))
   )
 }
 
@@ -351,7 +354,7 @@ mod_seasonality_server <- function(id, r) {
             shiny::tagList(bsicons::bs_icon("thermometer-half"), " Natural Gas \u2014 Storage Cycle")
           ),
           bslib::card_body(
-            plotly::plotlyOutput(session$ns("ng_storage_plot"), height = "340px")
+            plotly::plotlyOutput(session$ns("ng_storage_plot"), height = "50vh")
           )
         )
 

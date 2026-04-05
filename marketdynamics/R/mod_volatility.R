@@ -14,49 +14,52 @@ mod_volatility_ui <- function(id) {
     "RBOB Gasoline (RB)" = "RB"
   )
 
-  bslib::card(
-    full_screen = TRUE,
-    bslib::card_header(
-      shiny::tagList(bsicons::bs_icon("activity"), " Volatility Analysis")
+  shiny::tagList(
+    bslib::card(
+      bslib::card_header(
+        shiny::tagList(bsicons::bs_icon("activity"), " Volatility Analysis")
+      ),
+      bslib::card_body(
+        shiny::fluidRow(
+          shiny::column(3,
+            shiny::selectInput(ns("energy_market"), "Energy Market",
+              choices = energy_markets, selected = "CL")
+          ),
+          shiny::column(4,
+            shiny::dateRangeInput(ns("date_range"), "Date Range",
+              start = "2007-01-02", end = Sys.Date(),
+              min   = "2007-01-02", max = Sys.Date())
+          ),
+          shiny::column(3,
+            shiny::selectInput(ns("ticker"), "Series", choices = NULL)
+          ),
+          shiny::column(2,
+            shiny::tags$div(class = "mt-4", shiny::uiOutput(ns("load_status")))
+          )
+        ),
+        shiny::fluidRow(
+          shiny::column(4,
+            shiny::sliderInput(ns("vol_window"), "Rolling Window (days)",
+              min = 5, max = 63, value = 21, step = 1)
+          ),
+          shiny::column(8,
+            shiny::radioButtons(ns("view_type"), "View",
+              choices  = c(
+                "Rolling Vol"    = "rolling",
+                "Term Structure" = "term"
+              ),
+              inline   = TRUE,
+              selected = "rolling")
+          )
+        )
+      )
     ),
-    bslib::card_body(
-      shiny::fluidRow(
-        shiny::column(3,
-          shiny::selectInput(ns("energy_market"), "Energy Market",
-            choices = energy_markets, selected = "CL")
-        ),
-        shiny::column(4,
-          shiny::dateRangeInput(ns("date_range"), "Date Range",
-            start = "2007-01-02", end = Sys.Date(),
-            min   = "2007-01-02", max = Sys.Date())
-        ),
-        shiny::column(3,
-          shiny::selectInput(ns("ticker"), "Series", choices = NULL)
-        ),
-        shiny::column(2,
-          shiny::tags$div(class = "mt-4", shiny::uiOutput(ns("load_status")))
-        )
-      ),
-      shiny::fluidRow(
-        shiny::column(4,
-          shiny::sliderInput(ns("vol_window"), "Rolling Window (days)",
-            min = 5, max = 63, value = 21, step = 1)
-        ),
-        shiny::column(8,
-          shiny::radioButtons(ns("view_type"), "View",
-            choices  = c(
-              "Rolling Vol"    = "rolling",
-              "Term Structure" = "term"
-            ),
-            inline   = TRUE,
-            selected = "rolling")
-        )
-      ),
-      shiny::tags$hr(),
-      plotly::plotlyOutput(ns("vol_plot"), height = "calc(100vh - 340px)"),
-      shiny::tags$hr(),
-      shiny::uiOutput(ns("market_context"))
-    )
+    bslib::card(
+      bslib::card_body(
+        plotly::plotlyOutput(ns("vol_plot"), height = "50vh")
+      )
+    ),
+    shiny::uiOutput(ns("market_context"))
   )
 }
 
@@ -260,7 +263,7 @@ mod_volatility_server <- function(id, r) {
             shiny::tagList(bsicons::bs_icon("activity"), " Market Context: Outright vs. Crack Spread Volatility")
           ),
           bslib::card_body(
-            plotly::plotlyOutput(session$ns("crack_vol_plot"), height = "320px")
+            plotly::plotlyOutput(session$ns("crack_vol_plot"), height = "50vh")
           )
         )
 

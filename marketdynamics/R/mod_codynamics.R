@@ -6,54 +6,58 @@
 mod_codynamics_ui <- function(id) {
   ns <- NS(id)
 
-  bslib::card(
-    full_screen = TRUE,
-    bslib::card_header(
-      shiny::tagList(bsicons::bs_icon("arrows-angle-expand"), " Cross-Market")
-    ),
-    bslib::card_body(
-      shiny::fluidRow(
-        shiny::column(5,
-          shiny::dateRangeInput(ns("date_range"), "Date Range",
-            start = "2010-01-01", end = Sys.Date(),
-            min   = "2007-01-02", max = Sys.Date())
-        ),
-        shiny::column(4,
-          shiny::radioButtons(ns("view_type"), "View",
-            choices  = c(
-              "Rolling Correlation" = "rolling",
-              "Return Scatter"      = "scatter",
-              "PCA"                 = "pca",
-              "Treasury Curve"      = "treasury",
-              "Yield Spreads"       = "yield_spreads"
-            ),
-            inline   = TRUE,
-            selected = "rolling")
-        ),
-        shiny::column(3,
-          shiny::tags$div(class = "mt-4", shiny::uiOutput(ns("load_status")))
-        )
+  shiny::tagList(
+    bslib::card(
+      bslib::card_header(
+        shiny::tagList(bsicons::bs_icon("arrows-angle-expand"), " Cross-Market")
       ),
-      shiny::conditionalPanel(
-        condition = sprintf(
-          "input['%s'] == 'rolling' || input['%s'] == 'scatter'",
-          ns("view_type"), ns("view_type")
-        ),
+      bslib::card_body(
         shiny::fluidRow(
-          shiny::column(4,
-            shiny::selectInput(ns("series_x"), "Series A", choices = NULL)
+          shiny::column(5,
+            shiny::dateRangeInput(ns("date_range"), "Date Range",
+              start = "2010-01-01", end = Sys.Date(),
+              min   = "2007-01-02", max = Sys.Date())
           ),
           shiny::column(4,
-            shiny::selectInput(ns("series_y"), "Series B", choices = NULL)
+            shiny::radioButtons(ns("view_type"), "View",
+              choices  = c(
+                "Rolling Correlation" = "rolling",
+                "Return Scatter"      = "scatter",
+                "PCA"                 = "pca",
+                "Treasury Curve"      = "treasury",
+                "Yield Spreads"       = "yield_spreads"
+              ),
+              inline   = TRUE,
+              selected = "rolling")
           ),
-          shiny::column(4,
-            shiny::sliderInput(ns("cor_window"), "Rolling Window (days)",
-              min = 21, max = 252, value = 63, step = 1)
+          shiny::column(3,
+            shiny::tags$div(class = "mt-4", shiny::uiOutput(ns("load_status")))
+          )
+        ),
+        shiny::conditionalPanel(
+          condition = sprintf(
+            "input['%s'] == 'rolling' || input['%s'] == 'scatter'",
+            ns("view_type"), ns("view_type")
+          ),
+          shiny::fluidRow(
+            shiny::column(4,
+              shiny::selectInput(ns("series_x"), "Series A", choices = NULL)
+            ),
+            shiny::column(4,
+              shiny::selectInput(ns("series_y"), "Series B", choices = NULL)
+            ),
+            shiny::column(4,
+              shiny::sliderInput(ns("cor_window"), "Rolling Window (days)",
+                min = 21, max = 252, value = 63, step = 1)
+            )
           )
         )
-      ),
-      shiny::tags$hr(),
-      plotly::plotlyOutput(ns("cody_plot"), height = "calc(100vh - 300px)")
+      )
+    ),
+    bslib::card(
+      bslib::card_body(
+        plotly::plotlyOutput(ns("cody_plot"), height = "50vh")
+      )
     )
   )
 }

@@ -14,59 +14,62 @@ mod_forward_curve_ui <- function(id) {
     "RBOB Gasoline (RB)" = "RB"
   )
 
-  bslib::card(
-    full_screen = TRUE,
-    bslib::card_header(
-      shiny::tagList(bsicons::bs_icon("layers"), " Market Structure")
+  shiny::tagList(
+    bslib::card(
+      bslib::card_header(
+        shiny::tagList(bsicons::bs_icon("layers"), " Market Structure")
+      ),
+      bslib::card_body(
+        shiny::fluidRow(
+          shiny::column(3,
+            shiny::selectInput(ns("energy_market"), "Energy Market",
+              choices = energy_markets, selected = "CL")
+          ),
+          shiny::column(4,
+            shiny::dateRangeInput(ns("date_range"), "Date Range",
+              start = "2007-01-02", end = Sys.Date(),
+              min   = "2007-01-02", max = Sys.Date())
+          ),
+          shiny::column(3,
+            shiny::radioButtons(ns("view_type"), "View",
+              choices  = c(
+                "Curve Lines"     = "curves",
+                "Calendar Spread" = "spread"
+              ),
+              inline   = TRUE,
+              selected = "curves")
+          ),
+          shiny::column(2,
+            shiny::tags$div(class = "mt-4", shiny::uiOutput(ns("load_status")))
+          )
+        ),
+        bslib::layout_columns(
+          col_widths = c(4, 4, 4),
+          bslib::value_box(
+            title    = "Market Structure",
+            value    = shiny::uiOutput(ns("vb_structure")),
+            showcase = bsicons::bs_icon("graph-up-arrow"),
+            theme    = "primary"
+          ),
+          bslib::value_box(
+            title    = "M1\u2212M2 Spread",
+            value    = shiny::uiOutput(ns("vb_spread")),
+            showcase = bsicons::bs_icon("arrows-expand")
+          ),
+          bslib::value_box(
+            title    = "Historical Percentile",
+            value    = shiny::uiOutput(ns("vb_pct")),
+            showcase = bsicons::bs_icon("percent")
+          )
+        )
+      )
     ),
-    bslib::card_body(
-      shiny::fluidRow(
-        shiny::column(3,
-          shiny::selectInput(ns("energy_market"), "Energy Market",
-            choices = energy_markets, selected = "CL")
-        ),
-        shiny::column(4,
-          shiny::dateRangeInput(ns("date_range"), "Date Range",
-            start = "2007-01-02", end = Sys.Date(),
-            min   = "2007-01-02", max = Sys.Date())
-        ),
-        shiny::column(3,
-          shiny::radioButtons(ns("view_type"), "View",
-            choices  = c(
-              "Curve Lines"     = "curves",
-              "Calendar Spread" = "spread"
-            ),
-            inline   = TRUE,
-            selected = "curves")
-        ),
-        shiny::column(2,
-          shiny::tags$div(class = "mt-4", shiny::uiOutput(ns("load_status")))
-        )
-      ),
-      bslib::layout_columns(
-        col_widths = c(4, 4, 4),
-        bslib::value_box(
-          title    = "Market Structure",
-          value    = shiny::uiOutput(ns("vb_structure")),
-          showcase = bsicons::bs_icon("graph-up-arrow"),
-          theme    = "primary"
-        ),
-        bslib::value_box(
-          title    = "M1\u2212M2 Spread",
-          value    = shiny::uiOutput(ns("vb_spread")),
-          showcase = bsicons::bs_icon("arrows-expand")
-        ),
-        bslib::value_box(
-          title    = "Historical Percentile",
-          value    = shiny::uiOutput(ns("vb_pct")),
-          showcase = bsicons::bs_icon("percent")
-        )
-      ),
-      shiny::tags$hr(),
-      plotly::plotlyOutput(ns("curve_plot"), height = "380px"),
-      shiny::tags$hr(),
-      shiny::uiOutput(ns("market_context"))
-    )
+    bslib::card(
+      bslib::card_body(
+        plotly::plotlyOutput(ns("curve_plot"), height = "50vh")
+      )
+    ),
+    shiny::uiOutput(ns("market_context"))
   )
 }
 
@@ -346,7 +349,7 @@ mod_forward_curve_server <- function(id, r) {
             shiny::tagList(bsicons::bs_icon("info-circle"), " Market Context: WTI Crude \u2014 Price vs. US Crude Stocks")
           ),
           bslib::card_body(
-            plotly::plotlyOutput(session$ns("cl_stocks_plot"), height = "320px"),
+            plotly::plotlyOutput(session$ns("cl_stocks_plot"), height = "50vh"),
             shiny::tags$p(
               class = "text-muted mt-2", style = "font-size:0.9rem;",
               "Cushing, Oklahoma inventory is the primary driver of WTI curve shape. High stocks \u2192 contango (storage incentive); low stocks \u2192 backwardation (supply squeeze). Stocks axis inverted to illustrate the inverse relationship."
@@ -360,7 +363,7 @@ mod_forward_curve_server <- function(id, r) {
             shiny::tagList(bsicons::bs_icon("info-circle"), " Market Context: Brent Crude \u2014 WTI vs. Brent Price & Location Spread")
           ),
           bslib::card_body(
-            plotly::plotlyOutput(session$ns("wti_brn_plot"), height = "320px")
+            plotly::plotlyOutput(session$ns("wti_brn_plot"), height = "50vh")
           )
         )
 

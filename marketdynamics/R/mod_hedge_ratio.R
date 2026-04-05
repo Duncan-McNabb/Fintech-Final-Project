@@ -14,75 +14,78 @@ mod_hedge_ratio_ui <- function(id) {
     "RBOB Gasoline (RB)" = "RB"
   )
 
-  bslib::card(
-    full_screen = TRUE,
-    bslib::card_header(
-      shiny::tagList(bsicons::bs_icon("shield-check"), " Hedge Ratio Dynamics")
-    ),
-    bslib::card_body(
-      # Row 1: data controls
-      shiny::fluidRow(
-        shiny::column(3,
-          shiny::selectInput(ns("energy_market"), "Energy Market",
-            choices = energy_markets, selected = "CL")
-        ),
-        shiny::column(4,
-          shiny::dateRangeInput(ns("date_range"), "Date Range",
-            start = "2007-01-02", end = Sys.Date(),
-            min   = "2007-01-02", max = Sys.Date())
-        ),
-        shiny::column(3,
-          shiny::sliderInput(ns("window"), "Rolling Window (days)",
-            min = 21, max = 252, value = 63, step = 1)
-        ),
-        shiny::column(2,
-          shiny::tags$div(class = "mt-4", shiny::uiOutput(ns("load_status")))
-        )
+  shiny::tagList(
+    bslib::card(
+      bslib::card_header(
+        shiny::tagList(bsicons::bs_icon("shield-check"), " Hedge Ratio Dynamics")
       ),
-      # Row 2: analysis controls
-      shiny::fluidRow(
-        shiny::column(3,
-          shiny::conditionalPanel(
-            condition = sprintf(
-              "input['%s'] == 'rolling' || input['%s'] == 'scatter'",
-              ns("view_type"), ns("view_type")),
-            shiny::selectInput(ns("exposure"), "Exposure Series (Y)", choices = NULL)
+      bslib::card_body(
+        # Row 1: data controls
+        shiny::fluidRow(
+          shiny::column(3,
+            shiny::selectInput(ns("energy_market"), "Energy Market",
+              choices = energy_markets, selected = "CL")
+          ),
+          shiny::column(4,
+            shiny::dateRangeInput(ns("date_range"), "Date Range",
+              start = "2007-01-02", end = Sys.Date(),
+              min   = "2007-01-02", max = Sys.Date())
+          ),
+          shiny::column(3,
+            shiny::sliderInput(ns("window"), "Rolling Window (days)",
+              min = 21, max = 252, value = 63, step = 1)
+          ),
+          shiny::column(2,
+            shiny::tags$div(class = "mt-4", shiny::uiOutput(ns("load_status")))
           )
         ),
-        shiny::column(3,
-          shiny::conditionalPanel(
-            condition = sprintf(
-              "input['%s'] == 'rolling' || input['%s'] == 'scatter'",
-              ns("view_type"), ns("view_type")),
-            shiny::selectInput(ns("hedge"), "Hedge Instrument (X)", choices = NULL)
-          )
-        ),
-        shiny::column(3,
-          shiny::conditionalPanel(
-            condition = sprintf(
-              "input['%s'] == 'rolling' || input['%s'] == 'scatter'",
-              ns("view_type"), ns("view_type")),
-            shiny::radioButtons(ns("method"), "Method",
-              choices  = c("OLS Beta" = "ols", "Min Variance" = "minvar"),
+        # Row 2: analysis controls
+        shiny::fluidRow(
+          shiny::column(3,
+            shiny::conditionalPanel(
+              condition = sprintf(
+                "input['%s'] == 'rolling' || input['%s'] == 'scatter'",
+                ns("view_type"), ns("view_type")),
+              shiny::selectInput(ns("exposure"), "Exposure Series (Y)", choices = NULL)
+            )
+          ),
+          shiny::column(3,
+            shiny::conditionalPanel(
+              condition = sprintf(
+                "input['%s'] == 'rolling' || input['%s'] == 'scatter'",
+                ns("view_type"), ns("view_type")),
+              shiny::selectInput(ns("hedge"), "Hedge Instrument (X)", choices = NULL)
+            )
+          ),
+          shiny::column(3,
+            shiny::conditionalPanel(
+              condition = sprintf(
+                "input['%s'] == 'rolling' || input['%s'] == 'scatter'",
+                ns("view_type"), ns("view_type")),
+              shiny::radioButtons(ns("method"), "Method",
+                choices  = c("OLS Beta" = "ols", "Min Variance" = "minvar"),
+                inline   = TRUE,
+                selected = "ols")
+            )
+          ),
+          shiny::column(3,
+            shiny::radioButtons(ns("view_type"), "View",
+              choices  = c(
+                "Rolling HR" = "rolling",
+                "Scatter"    = "scatter"
+              ),
               inline   = TRUE,
-              selected = "ols")
+              selected = "rolling")
           )
-        ),
-        shiny::column(3,
-          shiny::radioButtons(ns("view_type"), "View",
-            choices  = c(
-              "Rolling HR" = "rolling",
-              "Scatter"    = "scatter"
-            ),
-            inline   = TRUE,
-            selected = "rolling")
         )
-      ),
-      shiny::tags$hr(),
-      plotly::plotlyOutput(ns("hr_plot"), height = "calc(100vh - 340px)"),
-      shiny::tags$hr(),
-      shiny::uiOutput(ns("market_context"))
-    )
+      )
+    ),
+    bslib::card(
+      bslib::card_body(
+        plotly::plotlyOutput(ns("hr_plot"), height = "50vh")
+      )
+    ),
+    shiny::uiOutput(ns("market_context"))
   )
 }
 
@@ -306,8 +309,8 @@ mod_hedge_ratio_server <- function(id, r) {
           bslib::card_body(
             bslib::layout_columns(
               col_widths = c(6, 6),
-              plotly::plotlyOutput(session$ns("crack_spread_plot"), height = "300px"),
-              plotly::plotlyOutput(session$ns("crack_321_plot"),    height = "300px")
+              plotly::plotlyOutput(session$ns("crack_spread_plot"), height = "50vh"),
+              plotly::plotlyOutput(session$ns("crack_321_plot"),    height = "50vh")
             )
           )
         )

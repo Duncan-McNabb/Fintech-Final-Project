@@ -16,7 +16,8 @@ app_ui <- function(request) {
         bootswatch = "flatly",
         primary    = "#2c3e50"
       ),
-      id = "main_tabs",
+      id       = "main_tabs",
+      fillable = FALSE,
 
       # ── Cover Page ──────────────────────────────────────────────────────────
       bslib::nav_panel(
