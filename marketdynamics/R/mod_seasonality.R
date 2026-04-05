@@ -47,6 +47,7 @@ mod_seasonality_ui <- function(id) {
         )
       )
     ),
+    shiny::uiOutput(ns("plot_context")),
     bslib::card(
       bslib::card_body(
         plotly::plotlyOutput(ns("seas_plot"), height = "50vh")
@@ -122,6 +123,17 @@ mod_seasonality_server <- function(id, r) {
       labels <- c(CL = "WTI Crude", BRN = "Brent Crude", NG = "Natural Gas",
                   HO = "Heating Oil", RB = "RBOB Gasoline")
       unname(labels[input$energy_market])
+    })
+
+    output$plot_context <- shiny::renderUI({
+      shiny::req(input$view_type)
+      txt <- switch(input$view_type,
+        "monthly" = "Average log return for each calendar month across the full date range, with standard-error bars. Use **Energy Market** to switch commodities and **Date Range** to adjust the lookback. Positive bars indicate months that are historically bullish; negative bars indicate bearish months.",
+        "overlay" = "Cumulative return paths summarized as a percentile envelope. The shaded bands show the 10th\u201390th and 25th\u201375th percentile range of annual return paths; the solid line is the historical average. The dashed red line highlights the most recent year. Reveals whether the current year is tracking above or below the seasonal norm.",
+        "vol"     = "Mean annualized 21-day rolling volatility by calendar month over the selected date range. Hotter colors flag months where realized vol is historically elevated \u2014 useful for timing option purchases or adjusting hedge ratios.",
+        "cal_spread" = "Average front-month minus second-month (M1\u2212M2) price spread by calendar month. Green bars indicate months where backwardation is typical (near-term supply tighter); red bars indicate contango (ample supply). Error bars show one standard deviation across years."
+      )
+      shiny::tags$p(class = "text-muted px-2", style = "font-size:0.85rem;", shiny::HTML(txt))
     })
 
     output$seas_plot <- plotly::renderPlotly({
@@ -221,38 +233,73 @@ mod_seasonality_server <- function(id, r) {
           dplyr::mutate(cum_ret = cumsum(.data$monthly_ret) * 100) |>
           dplyr::ungroup()
 
-        years    <- sort(unique(df_cum$year))
-        pal      <- grDevices::colorRampPalette(
-          c("#440154", "#31688e", "#35b779", "#fde725")
-        )(length(years))
-        avg_path <- df_cum |>
+        # Percentile ribbon + mean across all years
+        ribbon <- df_cum |>
           dplyr::group_by(.data$month) |>
-          dplyr::summarise(avg_cum = mean(.data$cum_ret, na.rm = TRUE), .groups = "drop")
-
-        p <- plotly::plot_ly()
-        for (i in seq_along(years)) {
-          yr_data <- dplyr::filter(df_cum, .data$year == years[i])
-          p <- plotly::add_lines(p,
-            data       = yr_data,
-            x          = ~month,
-            y          = ~cum_ret,
-            name       = as.character(years[i]),
-            line       = list(color = pal[i], width = 1),
-            showlegend = FALSE,
-            hovertemplate = paste0(years[i], " \u2014 Month %{x}: %{y:.1f}%<extra></extra>")
+          dplyr::summarise(
+            p10     = stats::quantile(.data$cum_ret, 0.10, na.rm = TRUE),
+            p25     = stats::quantile(.data$cum_ret, 0.25, na.rm = TRUE),
+            p75     = stats::quantile(.data$cum_ret, 0.75, na.rm = TRUE),
+            p90     = stats::quantile(.data$cum_ret, 0.90, na.rm = TRUE),
+            avg_cum = mean(.data$cum_ret, na.rm = TRUE),
+            .groups = "drop"
           )
-        }
-        p |>
-          plotly::add_lines(data = avg_path, x = ~month, y = ~avg_cum,
-            name = "Average",
-            line = list(color = "black", width = 3, dash = "dash"),
-            hovertemplate = "Avg \u2014 Month %{x}: %{y:.1f}%<extra></extra>"
+
+        # Most recent (current) year for highlight
+        cur_year <- max(df_cum$year)
+        cur_path <- dplyr::filter(df_cum, .data$year == cur_year)
+
+        p <- plotly::plot_ly() |>
+          # Outer band: 10th–90th pct (very faint)
+          plotly::add_ribbons(
+            data       = ribbon,
+            x          = ~month,
+            ymin       = ~p10,
+            ymax       = ~p90,
+            fillcolor  = "rgba(44,62,80,0.08)",
+            line       = list(color = "transparent"),
+            name       = "10\u201390th pct",
+            showlegend = TRUE,
+            hoverinfo  = "none"
           ) |>
+          # Inner band: 25th–75th pct
+          plotly::add_ribbons(
+            data       = ribbon,
+            x          = ~month,
+            ymin       = ~p25,
+            ymax       = ~p75,
+            fillcolor  = "rgba(44,62,80,0.18)",
+            line       = list(color = "transparent"),
+            name       = "25\u201375th pct",
+            showlegend = TRUE,
+            hoverinfo  = "none"
+          ) |>
+          # Average line
+          plotly::add_lines(
+            data          = ribbon,
+            x             = ~month,
+            y             = ~avg_cum,
+            name          = "Historical Avg",
+            line          = list(color = "#2c3e50", width = 2.5),
+            hovertemplate = "Avg \u2014 %{x}: %{y:.1f}%<extra></extra>"
+          ) |>
+          # Current year highlight
+          plotly::add_lines(
+            data          = cur_path,
+            x             = ~month,
+            y             = ~cum_ret,
+            name          = as.character(cur_year),
+            line          = list(color = "#e74c3c", width = 2, dash = "dot"),
+            hovertemplate = paste0(cur_year, " \u2014 %{x}: %{y:.1f}%<extra></extra>")
+          )
+
+        p |>
           plotly::layout(
             title  = paste0(market_label(),
-              " \u2014 Year Overlay Cumulative Returns (", series_id(), ")"),
+              " \u2014 Seasonal Cumulative Return Pattern (", series_id(), ")"),
             xaxis  = list(title = "Month", tickvals = 1:12, ticktext = month.abb),
-            yaxis  = list(title = "Cumulative Log Return (%)")
+            yaxis  = list(title = "Cumulative Log Return (%)"),
+            legend = list(orientation = "h", x = 0, y = 1.08)
           )
 
       } else if (input$view_type == "vol") {
@@ -334,11 +381,12 @@ mod_seasonality_server <- function(id, r) {
               categoryarray = month.abb),
             yaxis  = list(title = "Avg M1 \u2212 M2 Spread ($/unit)"),
             annotations = list(list(
-              x         = 0.5, y = 1.06,
+              x         = 0.5, y = -0.18,
               xref      = "paper", yref = "paper",
-              text      = "Green = typically backwardated | Red = typically in contango",
+              text      = "Green bars = backwardated (front month premium) \u00a0|\u00a0 Red bars = contango (deferred premium)",
               showarrow = FALSE,
-              font      = list(size = 10, color = "grey50")
+              font      = list(size = 10, color = "grey50"),
+              align     = "center"
             ))
           )
       }

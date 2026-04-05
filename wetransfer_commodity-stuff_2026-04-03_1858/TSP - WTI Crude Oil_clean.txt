@@ -1,0 +1,264 @@
+TSP - WTI Crude Oil
+TSP - WTI Crude Oil
+Author
+Michael North, Emma Fang, Shujaa Ali
+Published
+November 5, 2025
+About Your Commodity
+Introduction to WTI
+WTI stands for West Texas Intermediate, a type of crude oil. Oil from any location can be considered WTI if it meets the required quality specifications. WTI is lighter and sweeter, containing less sulfur than Brent (North Sea), and is significantly lighter and sweeter than Dubai crude. The sulfur of WTI is 0.42% or less by weight and an API of 37-40.
+Source: Kimray.com
+Benefits
+High Liquidity: The WTI futures and options market is very liquid, with about 1 million contracts traded daily. High liquidity means traders can buy or sell contracts easily without greatly affecting the price. The bid-ask spread is small, which lowers transaction costs.
+Global Benchmark: WTI is one of the reference prices for oil worldwide. Prices of other oil types and many energy products often follow WTI. WTI ,Brent crude and Dubai crude usually follow each other. Because oil markets are globally connected, if WTI prices rise, traders generally expect other oil prices to increase as well.
+Physical Settlement: WTI futures can be delivered as actual physical oil, which helps keep futures prices closely aligned with the spot market. Companies buying or selling physcial oil can hedge risk because the futures price reflects actual delivery costs.
+Tax Advantage: In the US, gains on WTI futures are taxed 60% as long-term and 40% as short-term, providing a favorable tax treatment for investors.
+WTI Futures and Options
+WTI futures and options are two key instruments in the global oil market. They are both benchmarks and tools for hedging and speculation.
+WTI Futures:
+WTI futures are among the most traded oil contracts globally. They trade in 1,000bbls per contract.
+With over one million contracts traded daily and roughly four million of open interest. WTI futures have high liquidity, which is important for efficient price discovery and market stability.
+WTI Options:
+Options on WTI futures provide traders with the right to buy or sell futures contracts at predetermined prices, offering strategies to profit from price volatility and managing risk at the same time.
+Options offer more risk management options compared to futures alone, allowing traders to tailor their exposure to oil price movements.
+Source:InteractiveBroker.com
+How Prices are Quoted
+WTI is quoted in U.S. dollars per barrel. Each futures contract represents 1000 barrels. A one dollar move in price means a 1000 dollar change per contract. Traders need to manage margin requirements which is the collateral posted to exchanges just in case the trade goes against them and they get margin called. External events like a weaker U.S. dollar can make oil cheaper for foreign buyers which pushes WTI prices up.
+Benchmark Spread (WTI versus Brent) WTI is the U.S. benchmark delivered at Cushing Oklahoma. Brent is the global benchmark delivered from the North Sea. The spread between WTI and Brent shows how U.S. supply and demand compares to the rest of the world. For example, if WTI is much cheaper than Brent then U.S. traders may export more oil overseas which narrows the spread. Pipeline shutdowns in the U.S. can trap oil inland and widen the spread. Middle East conflicts usually increase Brent prices and widen its premium over WTI.
+How it’s Traded
+The contracts are traded on the New York Mercantile Exchange (NYMEX), part of the CME Group, under the ticker symbol CL.
+WTI is a physically settled contract for light crude oil with a specific delivery date, grade, and location of delivery.
+WTI contracts can be traded from Sunday at 5:00 PM until Friday at 4:00 PM Central Time, with a 60-minute break each day beginning at 4:00 PM Central Time.
+CL contracts are traded in units of 1,000 barrels, priced in USD per barrel.
+Each contract has a unique letter to help identify which month the contract coincides with.
+For example, the WTI crude contract for January 2026 would have the ticker CLF26.
+“CL” is the general ticker for WTI crude oil, “F” correlates to the month of January, and the last two numbers (26) represent the year 2026.
+If you bought the CLF26 contract and January 2026 arrives, you would have to physically deliver the contracted amount in barrels to Cushing Oklahoma, quoted in USD per barrel, no earlier than January 1st, 2026, and no later than January 31st, 2026.
+CL contracts are very liquid and are typically traded on a monthly basis, but can also be traded as a continuous contract listed as CL00.
+Supply & Demand
+Source:Petropartners.com
+Supply (Upstream)
+The majority of supply for WTI light sweet oil comes from U.S. shale formations, extracted using different techniques.
+Source:src.sk.ca
+Drilling Techniques
+Hydraulic Fracking: High-pressured fluids are used to fracture shale rock to access oil. Most common for shale formations.
+Vertical Drilling: Wells are drilled straight down to reach oil reservoirs.
+Horizontal Drilling: The drill has more range of movement to be able to laterally follow an oil reservoir.
+Oil Sands Extraction: large pits are dug up to remove oil sands and then the oil is separated (common in AB).
+Production Plays
+One of the largest and most prominent formation for WTI is the Permian Basin, located in West Texas and New Mexico.
+Source:EIA.com
+These shale formations heavily impact the price of WTI crude:
+Decreased production → Tighter supply → Upward price movement
+Increased production → Looser supply → Downward price movement
+A decrease in production can be caused by:
+Natural disasters
+Slowing economy
+Geopolitical events
+Government policy changes can positively impact production:
+Example: Donald Trump easing environmental restrictions, allowing for more investment in oil production.
+Another key supply indicator is storage levels at Cushing, Oklahoma (23.5 Mbbls current):
+Storage levels are monitored by reporting agencies and reported weekly
+A build in storage indicates oversupply, typically leading to:
+Lower prices
+A market in contango
+A draw in storage indicates undersupply, typically leading to:
+Higher prices
+A market in backwardation
+Source:BOEReport.ca
+WTI crude also has global links and reacts to decisions made by OPEC:
+OPEC is a group of 12 oil-producing countries (with no North American members) controlling roughly 42% of global oil production
+OPEC members regularly meet to decide on production increases or cuts
+These decisions directly impact WTI prices in the U.S. — cuts typically raise prices, while increases lower prices
+Source:Legacyias.com
+Demand (Downstream)
+Most of the demand for WTI crude oil is in the United States.
+The U.S. has approximately 125 operational refineries that:
+Demand different grades of crude
+Refine crude into commercial products like gasoline, jet fuel, and lubricants
+Seasonal demand is observed during the peak driving season in summer, which puts upward pressure on prices.
+Global demand for WTI can also be impacted by:
+Increases or decreases in demand from countries like China or Europe
+Planned or Unplanned maintenance:
+EIA reports historical and upcoming planned refinery outages
+Provides details on specific units being shut down.
+Logistics (Midstream)
+Crude oil is transported via pipelines throughout North America.
+All pipelines have:
+Different capacity limits
+One-way flow direction
+Source:Enbridge.ca
+Each pipeline owner typically:
+Sets a tariff rate for shippers.
+Can engage in long-term committed contracts with able shippers.
+Committed levels vs Uncommitted levels impact supply:
+Some shippers have the right to ship more or less than their contracted amount.
+Pipelines undergo maintenance periods, which can be:
+Planned or Unplanned
+These maintenance events impact the supply of crude to specific areas of the U.S.
+To understand the overall supply and demand of WTI crude you must use both demand and supply factors in conjunction. The process of netting out supply vs demand factors is easier said than done.
+Market Participants
+Producers (Oil Companies)
+They are the sellers of WTI, mostly U.S. shale producers in Texas. Producers use futures to lock in a selling price before they pump the oil. For example, if oil is $65/bbl today, a producer might sell futures to guarantee that price even if the market drops later. External events like OPEC decisions or U.S. government production rules affect how producers hedge and trade.
+Hedge Example
+Never Wrong Oil is getting ready in December to sell 100,000bbls of WTI in January.
+They worry the price might drop before they sell.
+They decide to hedge price risk and acheive a target price of $65/bbl.
+They sell 100 January WTI futures (CLF26) at $65/bbl. each contract is 1,000 barrels.
+January arrives and the WTI price is $60/bbls.
+Financial trade ($5/bbl x 100,000bbls) + Physical trade ($60/bbl x 100,000bbls) = 6,500,000 USD.
+That is the same as $65/bbl across 100,000bbls.
+The market fell but the hedging strategy locked the price at $65/bbl.
+If prices went up, you’d have a lose on the financial position but a gain on physical.
+Overall, your target price would still be at $65/bbl.
+No Hedge Example
+Never Wrong Oil wants to sell 100,000bls of WTI in January.
+They decide not to hedge. WTI is currently trading at $65/bbl.
+January rolls around with less refinery outages than expected.
+More supply creates downward price movement and WTI is now $60/bbl.
+Assuming they have no storage capacity, they have to sell 100,000bbls at $65/bbls.
+Never Wrong Oil just lost $5/bbl = 500,000 USD.
+Consumers (Airlines, Refineries)
+They are the buyers of WTI. Refineries buy crude to turn into gasoline and diesel. Airlines indirectly hedge their jet fuel costs since jet fuel prices are linked to crude oil. Consumers use futures to lock in stable input costs. For example, a refinery might buy WTI futures to secure cheap crude before the summer driving season. If travel demand surges or new regulations hit, consumers hedge earlier to avoid paying higher prices.
+Source:purepathtec.com
+Traders (Banks, Hedge Funds)
+They do not use oil physically but they trade for profit. Traders provide liquidity so producers and consumers can hedge easily. They analyze spreads such as WTI versus Brent and make bets on supply and demand imbalances. For example, if U.S. inventories fall or a hurricane threatens Gulf Coast pipelines, traders quickly adjust positions to profit from expected price moves. Speculators ( mostly independent traders ) usually take on risk that others want to avoid. They do not care about physical delivery but focus only on price direction.
+Recent Price Trends
+May 2025: The price trend in 2025 is decreasing. There was a strong start at the beginning of the year, but demand is slowing. Prices fell in May 2025 after a report that OPEC+ plans to restore the oil production it had cut previously, meaning there will be an increase in production. Production was expected to rise by 411,000 barrels per day in July 2025 compared to June. To put this in perspective, Canada produces around 4.6 million barrels per day, so 411,000 barrels is about 9% of Canada’s output. Market participants were concerned that global supply could exceed demand growth.
+June 2022: Oil prices rose again after falling the previous month. The increase was driven by the EU and Japan stopping purchases of Russian oil, which created more uncertainty about supply. Seasonal demand was strong, as businesses and consumers typically use more oil at this time of year. Additionally, China eased some COVID-19 restrictions, improving the outlook for oil demand.
+April 2020 Prices dropped significantly during this period due to the COVID-19 pandemic, which caused a sharp decline in demand. In addition, OPEC countries made a deal to stop the price war between Saudi Arabia and Russia, which had threatened to increase oil supply to the market.
+Conclusion
+WTI is a light sweet crude oil (API ~38 & Sulfur < 0.42%) that is typically produced in the Permian basin in southern US. Cushing Oklahoma has a very large tank farm and is the physically delivery site associated with CL contracts. These storage tanks are connected to pipelines that are scattered throughout North America with different capacity limits. Oil producers help supply the market while refiners and consumers create demand. Both of these can be affected by natural disasters, geopolitical events, and policy changes.
+WTI futures (CL contracts) are highly liquid, widely traded contracts used for position management and hedging. CL contracts are all standardized with grade specifications, delivery locations, and delivery timing.
+Supply Demand Indicators
+Supply
+The majority of supply for WTI light sweet oil comes from U.S. shale formations, extracted using different techniques. The largest reserve of WTI crude comes from the Permian basin, located in West Texas and parts of New Mexico.
+To understand the supply and demand balance for WTI crude oil, you need to be able to break it down into it components. The majority of supply for WTI light sweet oil comes from U.S. shale formations, extracted using different techniques. We were able to use EIA data to extract field production and total imports to get our supply side of the equation. On the other hand, we used refinery and blender net input in conjunction with exports for our demand values. We also included inventory changes, which should offset the imbalance between supply and demand. When supply is greater than demand, we have a surplus of oil which is reflected by an inncrease in storage inventory. When demand is greater than supply we see a draw in inventory to help meet the unmet demand.
+Imports & Exports
+Right around the beginning of 2013, production started to surpass imports and it’s been that way ever since. This was due to the advancements of new extraction techniques such as hydraulic fracturing and horizontal drilling, which lead to a large production boom in shale basins. This allowed the US to meet its domestic demand with fewer imports, hence the downward trend in imported crude oil. This increase in production led to more exports out of the United State.
+The US Exports roughly ~120kbbls per month to countries all around the world. They exports the most crude oil to the Netherlands followed by Canada, South Korea, India, Taiwan, and China. The order of these countries changes by the month due to a variety of factors.
+Refinery Consumption
+Exports are just one part of the overall demand for crude oil in the US, the other half is the refinery demand. The US is home to roughly 132 operational refineries, taking crude oil as inputs and producing refined products as an output. Refineries come in a wide range of different setups, from very simple, to very complex, indicating what types of crude can be processed. Simpler refineries can handle lighter sweeter grades, where as more complex refineries are built to handle heavier sour crudes such as a WCS blend from Alberta Canada. When it comes to different grades of crude oil, some facilities around the US have blending tanks, which are used to combine a different grades of crude with other components to meet certain specifications. Blending, refinery consumption, and exports are what make up the demand side of the equation as seen in the chart below.
+Linking refinery consumption to historical events can be very evident when you look at the April 2020 period. This was the very beginning of the COVID-19 pandemic, forcing 340 million US residents to stay indoors. This led to less demand for many refined products such as diesel, gasoline, and jet fuel. Ultimately, the reduction in refined products demand led to a decrease in demand of crude which is reflected in the refineries reduced consumption of crude oil.
+Inventory
+Supply and demand must be equal at the end of the day. Since crude oil is a physical commodity, the market must have measures in place to accommodate for any supply and demand imbalances. This is where large storage tanks come into play. Another key supply indicator is storage levels at Cushing, Oklahoma:
+Storage levels are monitored by reporting agencies and reported weekly
+A build in storage indicates oversupply, typically leading to:
+Lower prices
+A market in contango
+A draw in storage indicates undersupply, typically leading to:
+Higher prices
+A market in backwardation
+The inventory levels fluctuate overtime and are considered the balancing measure for the WTI market. Storage levels are one of the most important factors in th crude market as they are reported on a weekly basis, and may help explain market sentiment.
+Summary
+Putting everything together we can see that supply and demand have had a steady increase over the last 15 years. The most updated Supply and Demand values are from August 2025, with supply (production + imports) totaling 633kbbls, and a demand (refinery demand + exports) 634kbbls. The inventory change of -927bbls versus July 2025 is equal to the imbalance in the model.
+Initially, looking at the monthly changes for the S&D indicators (excluding inventory change) we see that refinery consumption and domestic production tend to be within the 8% - 15% range. The change in exports has slowly become less volatile over the years, where as the range for imports has stayed the same.
+Forecast Model
+We were able to use last years data for Consumption, Production, Imports, and Exports to calculate the yearly increase for each indicator. We then used each respective percentage yearly increase/decrease (versus 2023) and applied that to the 2024 totals get a forecast for the 2025 totals. We then took the monthly proportion of the total for each year, averaged the last 4 years (excluding any current year values) and applied those proportions the total yearly forecast to get a monthly value for each indicator.
+Market View
+We are bearish to neutral into year end and this comes straight from our supply and demand model above. On the Supply vs Demand chart the supply line sat above demand in for November 2025 until the end of the year. The oversupply should be balanced by a build in inventory, and a potential downward price movement. On the Imports vs Exports chart imports held up while exports slipped on some weeks which added barrels. Our Cushing chart also showed several weekly builds (Appendix). None of this was changed by headlines and OPEC+ was not taking barrels off in the near term. So we see more chance of downside or sideways than a strong rally. Overall, based on our supply and demand forecast, we came into the beginnng of the trading simulation with a bearish view on flat price.
+Desired Exposure
+The platform allowed up to a total of 1,000 contracts of exposure at one time. We did not go in full size on the first order (more about size in the execution section) and we left room to add if price moved against us so we could hedge our positions if needed. Most of our risk was short flat price because our model indicated an oversupplied market, and broadly speaking, we had a large risk appetite. Due to the more volatile nature in flat price, we decided to execute a time spread position. If we were putting risk on now we would cap first entries at about 70–80% of the 1,000 limit so we can scale. One CL lot moves about $1,000 for each $1/bbl move. With 800 lots a $2 increase in price is about $1.6M against you so size only goes up when there is solid data and analysis because with more volatility comes more risk.
+Monetization Strategies
+Because the window was short we focused on flat price for bigger and faster moves and we added some time spreads when the data lined up. We analysed three separate strategies, and tracked their progress overtime, with the aim of capturing profits and minimzing any losses.
+Strategy #1 - Oversupply in the Market
+Our first strategy was to implement a trade based on our forecasted values from our supply and demand balances. Based on our model, the crude market in the US is sitting at an oversupply for the remainder of the year. Since we were trading primarily trading during the month of October, we were focused on the CL25X & CL25Z contracts.
+With an oversupply in the market, we would expect more suppliers to move barrels of crude oil into storage. For some suppliers, this may be simple if they have the correct connections and logistical agreements, but for others they may be stuck with extra barrels and cannot afford the cost of storage. Since crude is a physical commodity, and the CL contract is physically delivered at Cushing, some producers might discount their barrels to be bale to clear those barrels to someone who may have access to storage. This will put downward pressure on the price of WTI, which would incentivise more consumption and discourage producers from producing more to get back to an equilibrium of supply & demand,
+Strategy #2 - Dec vs Jan Spread
+We were curious as to how the CL contract for December vs January act each year as the December contract gets closer to expiry. We had a suspicion that the Dec vs Jan spread would be abnormally volatile due to the timing in the year. Many companies are releasing their Q3 results in the month of October, indicating whether they have hit/missed their production guidance. With only three months left before year end results, many companies could be adjusting their production to meet certain goals which could cause some uncertainty in production for the next few months.
+To further analyse this hypothesis, we visualized the overall trend of the Dec vs Jan contract for the last four years. From the chart below, we were able to see that as the contracts came closer to expiry, the spread would tighten. This gave us indication that we could potentially see the Dec25/Jan26 spread tighten and leave us an opportunity for profit.
+Strategy #3 - Lessons learned Trade (WTI-Brent Spread)
+Going back to the beginning of the trading game, we had an incomplete S&D forecast and decided incorporate the use of news as a proxy for a trading strategy. We saw a potential for an increase in production by OPEC members, due to their recent history of over producing vs their stated quotas, which would could put downward pressure on Brent crude. We later found out using news on its own is not a practical trading strategy, and discuss this in detail in our lessons learned section.
+Source:realeconomy.rsmus.com
+Risk Appetite
+We were willing to take risk when the numbers were clear. In week 1 we had about 800 CL short. That is big but it matched our view because the early data leaned to builds and export strength was not enough to flip the balance and outside news did not change the math. Our model pointed the same way so we pressed it and still left room to scale.
+In our trade, we implemented time spread trades for the CL25Z and CL26F contracts as well as flat price trades for the CL25X contract and BK25X contract which is the WTI-Brent spread.
+CL25X has shown significant price volatility over the past years, while its P&L has shown similar trends to the price movement. This flat price strategy has under performed. When a particular contract generates negative P&L, the flat price strategy experiences the entire loss.
+For the CL25Z and CL26F time spread, profits reached up to $0.3/bbl, while losses went down to -$0.3/bbl over the past few years. The spread reached it’s peak profit in 2025 but experienced its largest loss just before that, and then recovered. The spread value is highly volatile. It remained positive for most of the period from 2020 to 2021 and for a short period in 2025. Besides that, the spread value was negative and experienced extreme negative values during 2022. We can see from this graph that this time spread strategy generates high rewards but also requires a high tolerance for risk.
+The location spread has relatively low volatility but has experienced negative P&L which shows Brent has been traded higher then WTI . We short the BK25X at the beginning hoping the WTI-Brent spread would become narrow.
+The time spread shows the narrowest curve, indicating that it is the least volatile strategy of the three. This is consistent with our knowledge of trading spreads. The location spread shows moderate volatility compared to the other two strategies. The flat price shows the widest and fat-tailed distribution, indicating high volatility. This is consistent with the understanding that the flat price strategy carries high risk.
+Execution
+Trade #1 - Short Flat Price
+To take advantage of our forecasted oversupply in the market, we decided to sell the 300 lots of the November contract (CL25X) at a price of $60.88/BBL, for a total cost of $1.83 million on October 3rd, 2025. Our rationale behind this trade was directly rooted from our S&D model. We believed that the oversupply of crude oil in the market would put downward pressure on the price of WTI, hence the sell trade. We exited this trade on October 13th, 2025 at $59.49/BBL, which was roughly a $1.40/BBL of price movement in our favour. We believed that a price decline of over $1.20/BBL was enough profit for us to close out of our position.
+Penalty: We decided to take another crack at this strategy as we still had conviction in our S&D model, and still saw room for the price to fall. We opened a short position of 600 lots of the CL25X at $57.46/BBL on October 16th, 2025. We failed to close out of this position before the contract expiry date (October 21st, 2025) and received a penalty of -$500k.
+Trade #2 - Short Dec25/Jan26
+Based on our analysis of the historical spread between Dec/Jan, we decided as a team, to short the Dec25/Jan26 spread, which meant selling CL25Z and buying CL26F at the same time with the help of the structured deals tab. On October 3rd, 2025 we sold 250 lots of the Dec25/Jan26 spread at +$0.19/BBL. We then continued to monitor the spread over the course of a week, seeing the spread increase, moving against our market view. We still believed that our fundamentals would hold and we saw the spread peak at $0.33/BBL, and then come down to $0.18/BBL on October 13th, which is when we decided to close out the position at a very small gain of $0.01/BBL.
+Later on in the game, we decided to reopen this position as we saw the spread soar up to $0.63/BBL on October 23, 2025, an increase of 250% from the prior day. We noticed this a day after it happened, and on October 24th, we sold 200 lots of the Dec25/Jan26 spread at $0.54/BBL with the same strategy as before. We still believed the spread would tighten as the contracts came closer to expiry, coupled with an overshoot the day before. We then closed out of this position on November 3rd, 2025 by buying 200 lots of the Dec25/Jan26 spread at $0.30/BBL. This left us with a profit of $0.23/BBL, which was much greater than our first time around with this trade strategy.
+Trade #3 - Short WTI-Brent Spread
+This was one of the trades where we lost money from a lack of analysis and focused too much on news. We sold 50 lots of the November WTI-Brent spread (BK25X) on October 3rd, 2025 at -$3.67. Our thoughts were that the spread would widen from an increase the production output by OPEC members, but we failed to realize that this news, along with most other headlines, are already priced into the underlying assets. Our one upside form this trade was that we knew we didn’t have a lot of conviction therefore we only exposed ourselves to 50 lots, which was much smaller than our other strategies. We closed out of this position on October 13th, by buying 50 lots of the BK25X at -$3.91/BBL, at a gain of $0.24/BBL on the strategy. We did not have a lot of evidence to back up this trade, therefore we locked in the small gain we had.
+Profit and Loss (“PL” Attribution)
+This bar chart shows where our profit came from before the penalty. The CL X2025 short brought in the most profit, the time spread added a smaller boost and BK was only a small contribution. Seeing the bars side by side makes it easy to compare trades and spot what actually moved the PnL. It helps us focus on the trades that matter and learn from the ones that added little or lost money.
+Market Exposure in
+Cost (USD)
+ticker
+X2025
+Z2025
+F2026
+TOTAL
+BK
+$612,000.00
+$0.00
+$0.00
+$612,000.00
+CL
+$34,896,000.00
+$12,160,000.00
+$31,995,000.00
+$79,051,000.00
+TOTAL
+$35,508,000.00
+$12,160,000.00
+$31,995,000.00
+$79,663,000.00
+This table shows where our dollars sat by ticker and expiry. The shading makes it easy to link big exposures to positive or negative outcomes and it also shows that most of the risk sat in CL rather than BK. It is a quick way to check if our PnL lines up with where we put size.
+This line chart shows how profit changed over time. It highlights the jump around Oct 13, the flat stretch after when we did not add trades and the sharp drop on Nov 3 from the expiry penalty.
+Lessons Learned
+Our main lesson is to let the supply and demand work lead every idea. Our S&D model showed extra barrels and likely inventory builds so we expected lower prices already. That gave us a clear plan before any news hit and it helped us stay with the trade even when things were noisy.
+Our biggest win came from CL future contract around October 13 where we made about 430k. That entry was pushed by the news flow and the timing worked but it was still a news trade. News does not give the full picture and it can change fast as Professor Phil says so hence going forward we would start with the model, wait for the weekly numbers to agree and then use headlines only to fine-tune entries and exits. That keeps us from chasing moves that do not match the data.
+We also learned a hard risk lesson. We took a 500,000 penalty because a contract expired while it was still open. We thought it would auto roll or flatten and we even talked about it in the group chat but that was unfortunately wrong. Going forward we would keep this in mind and plan to be flat or rolled at least two trading days before the last trade date.
+Also we will put more risk into time spreads and only use flat price when the data and the timing both line up. In the future we would size down on flat price, plan entry and exits in advance and stick to the plan when the model and the weekly balances agree.
+In conclusion, the S&D model called the direction and our timing helped but the expiry penalty turned a strong run into a weaker result. Going forward we’ll let the supply and demand work lead every idea and use price action only to fine tune entries and size positions to the strength of the signal.
+Appendix
+Call:
+stats::lm(formula = InvChange ~ Delta, data = WTI_Cushing)
+Residuals:
+Min      1Q  Median      3Q     Max
+-5584.4  -740.3    13.1   719.8  6427.4
+Coefficients:
+Estimate Std. Error t value Pr(>|t|)
+(Intercept)    13.73      37.98   0.361    0.718
+Delta         -16.53      21.93  -0.753    0.451
+Residual standard error: 1245 on 1073 degrees of freedom
+Multiple R-squared:  0.0005287, Adjusted R-squared:  -0.0004027
+F-statistic: 0.5676 on 1 and 1073 DF,  p-value: 0.4514
+Call:
+stats::lm(formula = Delta ~ Total_InvChange, data = WTI_US)
+Residuals:
+Min       1Q   Median       3Q      Max
+-15.2453  -0.9782   0.0732   0.9446   6.9183
+Coefficients:
+Estimate Std. Error t value Pr(>|t|)
+(Intercept)      4.363e-02  5.242e-02   0.832    0.405
+Total_InvChange -4.596e-05  1.095e-05  -4.198 2.91e-05 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+Residual standard error: 1.719 on 1073 degrees of freedom
+(12 observations deleted due to missingness)
+Multiple R-squared:  0.01616,   Adjusted R-squared:  0.01524
+F-statistic: 17.62 on 1 and 1073 DF,  p-value: 2.915e-05
+Call:
+stats::lm(formula = Delta ~ InvChange, data = HTT_Cushing)
+Residuals:
+Min       1Q   Median       3Q      Max
+-2.27826 -0.02398  0.00777  0.03582  1.03365
+Coefficients:
+Estimate Std. Error t value Pr(>|t|)
+(Intercept) -5.198e-03  6.989e-03  -0.744  0.45738
+InvChange    1.520e-05  4.758e-06   3.195  0.00149 **
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+Residual standard error: 0.1545 on 488 degrees of freedom
+Multiple R-squared:  0.02049,   Adjusted R-squared:  0.01848
+F-statistic: 10.21 on 1 and 488 DF,  p-value: 0.001489
+###Inventory by PADD
+More Inventory graphs

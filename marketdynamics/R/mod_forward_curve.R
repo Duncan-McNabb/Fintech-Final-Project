@@ -64,6 +64,7 @@ mod_forward_curve_ui <- function(id) {
         )
       )
     ),
+    shiny::uiOutput(ns("plot_context")),
     bslib::card(
       bslib::card_body(
         plotly::plotlyOutput(ns("curve_plot"), height = "50vh")
@@ -85,9 +86,10 @@ mod_forward_curve_ui <- function(id) {
 mod_forward_curve_server <- function(id, r) {
   shiny::moduleServer(id, function(input, output, session) {
 
-    energy_data   <- shiny::reactiveVal(NULL)
-    cl_brn_data   <- shiny::reactiveVal(NULL)
+    energy_data    <- shiny::reactiveVal(NULL)
+    cl_brn_data    <- shiny::reactiveVal(NULL)
     cl_stocks_data <- shiny::reactiveVal(NULL)
+    rig_count_data <- shiny::reactiveVal(NULL)
 
     shiny::observeEvent(
       list(input$energy_market, input$date_range),
@@ -114,15 +116,22 @@ mod_forward_curve_server <- function(id, r) {
 
         energy_data(data)
 
-        # Load EIA crude stocks when WTI is selected
+        # Load EIA crude stocks + rig count when WTI is selected
         if (input$energy_market == "CL") {
           stocks <- tryCatch(
             load_eia_data(roles = "crude_stocks", start_date = start, end_date = end),
             error = function(e) NULL
           )
           cl_stocks_data(stocks)
+
+          rigs <- tryCatch(
+            load_eia_data(roles = "rig_count", start_date = start, end_date = end),
+            error = function(e) NULL
+          )
+          rig_count_data(rigs)
         } else {
           cl_stocks_data(NULL)
+          rig_count_data(NULL)
         }
 
         if (!is.null(data)) {
@@ -208,6 +217,15 @@ mod_forward_curve_server <- function(id, r) {
         style = "font-weight:700;",
         paste0(s$pct_rank, "th")
       )
+    })
+
+    output$plot_context <- shiny::renderUI({
+      shiny::req(input$view_type)
+      txt <- switch(input$view_type,
+        "curves" = "All available contract months plotted over time. The bold black line is the front month; lighter lines are deferred contracts. Hover shows benchmark tenors (1, 6, 12, 18, 24, 36 months). When curves fan out, the market is in **contango** (deferred > front); when they compress or invert, it signals **backwardation** (supply tightness).",
+        "spread" = "The M1\u2212M2 calendar spread (front month minus second month) over time. Positive values = backwardation (supply tight, front premium); negative = contango (ample supply, storage incentive). The dashed orange line marks the historical median spread. Green/red background shading highlights the regime."
+      )
+      shiny::tags$p(class = "text-muted px-2", style = "font-size:0.85rem;", shiny::HTML(txt))
     })
 
     output$curve_plot <- plotly::renderPlotly({
@@ -344,15 +362,29 @@ mod_forward_curve_server <- function(id, r) {
       mkt <- input$energy_market
 
       if (mkt == "CL") {
-        bslib::card(
-          bslib::card_header(
-            shiny::tagList(bsicons::bs_icon("info-circle"), " Market Context: WTI Crude \u2014 Price vs. US Crude Stocks")
+        shiny::tagList(
+          bslib::card(
+            bslib::card_header(
+              shiny::tagList(bsicons::bs_icon("info-circle"), " Market Context: WTI Crude \u2014 Price vs. US Crude Stocks")
+            ),
+            bslib::card_body(
+              plotly::plotlyOutput(session$ns("cl_stocks_plot"), height = "50vh"),
+              shiny::tags$p(
+                class = "text-muted mt-2", style = "font-size:0.9rem;",
+                "Cushing, Oklahoma inventory is the primary driver of WTI curve shape. High stocks \u2192 contango (storage incentive); low stocks \u2192 backwardation (supply squeeze). Stocks axis inverted to illustrate the inverse relationship."
+              )
+            )
           ),
-          bslib::card_body(
-            plotly::plotlyOutput(session$ns("cl_stocks_plot"), height = "50vh"),
-            shiny::tags$p(
-              class = "text-muted mt-2", style = "font-size:0.9rem;",
-              "Cushing, Oklahoma inventory is the primary driver of WTI curve shape. High stocks \u2192 contango (storage incentive); low stocks \u2192 backwardation (supply squeeze). Stocks axis inverted to illustrate the inverse relationship."
+          bslib::card(
+            bslib::card_header(
+              shiny::tagList(bsicons::bs_icon("tools"), " Market Context: WTI Crude \u2014 Price vs. Baker Hughes Rig Count")
+            ),
+            bslib::card_body(
+              plotly::plotlyOutput(session$ns("rig_count_plot"), height = "50vh"),
+              shiny::tags$p(
+                class = "text-muted mt-2", style = "font-size:0.9rem;",
+                "The Baker Hughes rig count is a leading indicator of US crude supply. Rising rig counts signal expanding production (bearish for price); falling counts signal supply curtailment (bullish). The lag between rig activity and production changes is typically 3\u20136 months."
+              )
             )
           )
         )
@@ -441,6 +473,52 @@ mod_forward_curve_server <- function(id, r) {
           annotations = list(list(
             x         = 0.01, y = 0.98, xref = "paper", yref = "paper",
             text      = "Stocks axis inverted \u2014 rising inventory correlates with falling price (contango pressure)",
+            showarrow = FALSE, font = list(size = 10, color = "grey50"), align = "left"
+          ))
+        )
+    })
+
+    output$rig_count_plot <- plotly::renderPlotly({
+      shiny::req(rig_count_data(), energy_data())
+
+      cl_front <- dplyr::filter(energy_data(), .data$series == "CL01") |>
+        dplyr::arrange(date) |>
+        dplyr::filter(!is.na(.data$value))
+
+      rigs <- dplyr::filter(rig_count_data(), !is.na(.data$value)) |>
+        dplyr::arrange(date)
+
+      shiny::req(nrow(cl_front) > 0, nrow(rigs) > 0)
+
+      plotly::plot_ly(cl_front, x = ~date) |>
+        plotly::add_lines(
+          y             = ~value,
+          name          = "WTI Front Month",
+          line          = list(color = "#2c3e50", width = 1.5),
+          hovertemplate = "Date: %{x|%Y-%m-%d}<br>$%{y:.2f}/bbl<extra></extra>"
+        ) |>
+        plotly::add_lines(
+          data          = rigs,
+          x             = ~date,
+          y             = ~value,
+          name          = "US Rig Count",
+          yaxis         = "y2",
+          line          = list(color = "#e67e22", width = 1.3),
+          hovertemplate = "Date: %{x|%Y-%m-%d}<br>Rigs: %{y:,.0f}<extra></extra>"
+        ) |>
+        plotly::layout(
+          title  = "WTI Crude \u2014 Front-Month Price vs. Baker Hughes Rig Count",
+          xaxis  = list(title = "Date"),
+          yaxis  = list(title = "Price ($/bbl)"),
+          yaxis2 = list(
+            title      = "Active Rigs",
+            overlaying = "y", side = "right",
+            showgrid   = FALSE
+          ),
+          legend = list(orientation = "h", x = 0, y = 1.08),
+          annotations = list(list(
+            x = 0.01, y = 0.98, xref = "paper", yref = "paper",
+            text = "Rig count leads production by ~3\u20136 months \u2014 watch for divergence from price as an early supply signal",
             showarrow = FALSE, font = list(size = 10, color = "grey50"), align = "left"
           ))
         )

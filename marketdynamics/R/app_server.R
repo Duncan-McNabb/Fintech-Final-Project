@@ -17,4 +17,5 @@ app_server <- function(input, output, session) {
   mod_codynamics_server("codynamics_1",         r = r)
   mod_seasonality_server("seasonality_1",       r = r)
   mod_hedge_ratio_server("hedge_ratio_1",       r = r)
+  mod_simulation_server("simulation_1",         r = r)
 }

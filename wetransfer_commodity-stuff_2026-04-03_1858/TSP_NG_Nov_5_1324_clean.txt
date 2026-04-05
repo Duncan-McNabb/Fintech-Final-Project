@@ -1,0 +1,335 @@
+TSP - Natural Gas (NG)
+TSP - Natural Gas (NG)
+Author
+Alex Hirtle, Jacob Zarowny, Mathew Frame, Nursultan Amangeldiev
+Published
+November 5, 2025
+About Your Commodity
+Our Commodity - Natural Gas
+Today we’re going to teach you the basics of the Henry Hub Natural Gas Futures Contract, structured in five clear sections:
+Introduction – What Henry Hub is, why it’s the benchmark for U.S. natural gas, and how the futures contract works.
+Production & Upstream (Who Sells It) – Where natural gas comes from, the role of producers, and how gas is processed before entering the market.
+Transportation & Storage (Midstream) – How pipelines and storage connect supply to demand, and why infrastructure matters for prices.
+Consumption & Downstream (Who Buys It) – The key demand sectors (power generation, industry, residential/commercial, LNG exports), and examples of major buyers.
+Key Risks – The main factors that can disrupt supply and demand, including weather seasonality, storage balances, pipeline constraints, LNG exports, and even foreign exchange swings.
+By the end, you’ll have a clear picture of how gas flows from the wellhead to the Henry Hub futures contract, and why this market is so sensitive to fundamentals like weather, storage, and infrastructure.
+Introduction
+What is Natural Gas?
+Natural gas is the fuel that keeps the lights on, heats our homes, and powers factories across North America. At its core, it’s mostly methane, a molecule that burns cleanly to release energy.
+Henry Hub Futures
+Even though gas is produced all over the continent, the price everyone looks at is set in one place: Henry Hub in Louisiana. The Henry Hub futures contract, traded on NYMEX, is the benchmark that anchors U.S. and Canadian gas markets and even influences global LNG prices. Each contract is 10,000 MMBtu, but more importantly, it’s the reference point that traders, consumers, and exporters use every day to value natural gas.
+Futures Contract Specifications.
+Traded on NYMEX under the ticker NG
+Trades from Sunday - Friday 6:00 PM - 5:00 PM EST with an hour break each day at 5:00 PM EST
+Each contract is for 10,000 MMBtu (Metric Million British Thermal Units) worth of pipeline grade natural gas
+A single British Thermal Unit generates enough energy to raise the temperature of a pound of water at sea level one degree Fahrenheit
+For an easier visual, the amount of natural gas required to produce 10,000 MMBtu can fill approximately 111 hot air balloons
+Pipeline grade natural gas is primarily methane and standard across North America
+The outright minimum price fluctuation is $0.001/MMBtu or $10/contract
+Monthly contracts are listed for the current year and the next 12 calendar months.
+Trading terminates on the 3rd last business day of the month prior to the contract month
+Contracts are physically deliverable
+Trading Strategies to Consider
+Time spreads - capitalize on the curve (contango, backwardation)
+Storage Assets
+Location spreads - capitalize on price differences at different hubs (AECO, Henry Hub, etc.)
+Pipelines
+LNG Exports (to capitalize on international location spreads)
+Inter-Commodity Spreads - capitalize on spreads between related commodities (NG, WTI, Jet Fuel, etc.)
+Options Based Spreads
+Abbreviations
+Bcf – Billion cubic feet
+LNG – Liquified Natural Gas
+Mcf – Thousand cubic feet
+MMcf – Million cubic feet
+NG – Natural Gas
+NGL – Natural Gas Liquid
+HDD – Heating degree day (degrees below 65°F)
+CDD – Cooling degree day (degrees above 65°F)
+MMBtu – Million British Thermal Units (1,000,000 Btu)
+Btu – Amount of heat needed to raise 1 lb of water by 1°F
+MWh – Megawatt hour (energy from 1 MW of power for 1 hour)
+Seasonality
+Natural gas is one of the most seasonal commodities:
+Winter: Prices peak due to heating demand.
+Summer (South U.S.): Secondary peak from air conditioning demand (power burn).
+Storage has incredible value:
+- Buy during shoulder seasons (spring/fall) when prices are lower (contango).
+- Store and sell in winter when demand spikes → arbitrage opportunity if storage is cheaper than the basis you can lock in.
+Foreign Exchange Risk
+Henry Hub futures trade in U.S. Dollars.
+Non-U.S. traders face FX risk when hedging/arb opportunities.
+FX also impacts the economics of LNG exports, since they compete in global markets.
+Unit Conversions
+Henry Hub natural gas futures are traded in $/MMBtu. Common conversions:
+Volume (cubic feet): 1 MMBtu ≈ 1,000 cf
+Oil Equivalent (boe): 1 MMBtu ≈ 0.172 boe
+Power (MWh): 1 MMBtu ≈ 0.293 MWh
+LNG (metric tons): 1 MMBtu ≈ 0.019 mt LNG
+Production & Upstream (Who Sells It)
+Production
+Geological Surveying
+Production begins first with geological surveying and geophysical testing of potential gas reserves. Natural Gas reserves are primarily found in sedimentary basins, aquifers, or crude oil fields. Sedimentary rock is found in the Appalachian Basin, Permian Basin, Haynesville Shale, and Western Canadian Sedimentary basin. The geophysical testing confirms the location, size, and viability of Gas reserves before drilling begins.
+Source: Britannica, North American sedimentary basins and Gas fields.
+Test Drilling, Fracking, and Production Drilling
+After a reserve is located and a rig floor is cleared, a test drill is sent down to measure the well. It verifies size, quality, and location among other things. After the test well is completed, the well is fracked. Fracking trucks use a mixture of 90% water, 9% sand, and 1% trace chemicals to inject the solution and create faults in the well to increase flow rate and prepare the well for production drilling.
+Lastly, a production well is drilled, and a well cap and tree are fitted. Once production drilling is finished, gas begins to flow from the well to a gas plant or field processing station for futher refinement. The gas is known as “wet gas” at this phase due to water and heavy hydrocarbon content.
+Source: cnps.com, Fracking operation diagram.
+Source: Gstatic, Photo of a traditional NG wellhead or “Well Tree”
+Transportation & Storage (Midstream)
+Separation and Refinement
+Water and other heavier hydrocarbons are removed from the wet gas, then chemical separation is done to remove other light hydrocarbons from the gas, further refining it. These light hydrocarbons, known as “NGL’s” or natural gas liquids are removed and sent for further processing, being used as reagents or fuels themselves. Lastly, non-hydrocarbon gasses are scrubbed using a decontamination unit. The refined and cleaned gas is now known as “dry gas” or “pipeline-grade gas”.
+Natural Gas Liquids (NGLs)
+Natural gas produced from a well is referred to as “wet gas.” A gas plant must remove water, acid gases, and NGLs in order to transform it into pipeline-grade “dry gas” (methane).
+Methane (C1) – This is “natural gas.”
+Ethane (C2) – Used in petrochemical processes, mostly to produce plastics. Can cause a constraint in natural gas supply if there isn’t enough ethane takeaway capacity.
+Propane (C3) – Used for residential/commercial heating, small stoves, and BBQs.
+Butane & Isobutane (C4) – Used as liquified petroleum gas (LPG) for heating, cooking, stoves; gasoline blending; lighter fluid; petrochemical processes.
+Pentanes+ (C5) – Main use is as a diluent/condensate for heavy crude. Oil sands bitumen is too thick/viscous to flow in pipelines, so pentane is blended at the upgrading stage. The blend is called dilbit (diluted bitumen, ~30% pentanes+, 70% bitumen).
+Rough estimate: North American demand >1 million barrels/day.
+Oil sands alone = ~450,000+ barrels/day due to heavy crude requiring more pentane.
+Transportation
+Natural gas infrastructure like pipelines and storage is what connects supply from producing regions to demand centres like cities, power plants, and industrial users.
+Pipelines are “highways” of the natural gas market
+Producers in basins inject gas into gathering systems, which then feed into interstate pipelines.
+From there, the gas can flow to hubs like Henry Hub where it can be redirected towards the demand centres.
+Source: CFI, American Pipeline Map
+Producers contract with pipeline companies called “Midstream players” such as Kinder Morgan, Williams (Transco), TC Energy, and Energy Transfer to move gas, paying transportation tariffs regulated by the Federal Energy Regulatory Commission (FERC).
+Types of contracts:
+Firm (guaranteed capacity)
+Interruptible (cheaper but not guaranteed)
+Storage
+Storage acts as the system’s shock absorber.
+The demand for gas is highly seasonal (spiking in the winter for heating and in the summer for power generation).
+To manage this, natural gas is stored in underground facilities:
+Depleted gas reservoirs
+Aquifers
+Salt caverns
+Source: Esimtech, Underground gas storage facilities.
+Salt caverns are especially important in the Gulf Coast region (near Henry Hub) because they can inject and withdraw gas quickly - ideal for short-term balancing.
+Storage operators, which are often the same pipeline companies, sell capacity to shippers, who pay fees to hold gas in storage and withdraw it when needed.
+For traders, storage provides flexibility to arbitrage between low summer prices and higher winter prices.
+In fact, the economics of Henry Hub futures are heavily influenced by storage availability, since it determines whether surplus gas can be absorbed or whether it floods the market and decreases prices.
+For example, if storage near Henry Hub is nearly full, excess gas has nowhere to go, and futures prices fall.
+Conversely, when storage is tight or pipelines are constrained during high demand, prices surge.
+Interconnected Natural Gas Infrastructure and Market Arbitrage
+Another important point to emphasize is that the North American natural gas system is highly interconnected.
+Pipelines link producing regions like the Permian, Marcellus, and Western Canada to demand centres across the U.S., Canada and even into Mexico.
+Regional hubs (Henry, AECO) don’t operate in isolation
+If price differences between hubs become too wide, & transportation costs make it feasible, traders and shippers can move gas across regions to capture arbitrage opportunities.
+This keeps local markets in check with regional and benchmark prices, preventing extreme price dislocations.
+LNG
+Overview.
+LNG is an extension of the traditional natural gas production and consumption cycle. LNG is created by cooling the natural gas, which primarily consists of methane to a temperature at which the gas changes phase to liquid. The gas condenses into a liquid at -162 degrees Celsius, which is done by large refrigeration and cooling units located at ports with LNG terminals. LNG condenses the natural gas to 600 times its normal density, and allows it to be transported in specialized vessels with insulated holding tanks where it is taken to markets overseas.
+In various countries and at a number of ports there is regassification plants at LNG terminals that, upon delivery of LNG from a ship will warm the liquid back up until it evaporates into a gaseous form. The natural gas is then reinjected into local distribution pipelines, a process similar to what happens after natural gas is processed at gas plants.
+Logistics of LNG.
+LNG transport happens primarily on LNG carrying ships, or LNG carriers. On average, the ships have a capacity of 125,000 - 175,000 cubic meters (approximately 700,000 - 1,000,000 mmBTU) of storage for LNG onboard.
+Ships are often chartered directly by gas companies, either on short-term month by month or shipment by shipment basis, or on long term charters (LTC’s). LTC’s are often used by large gas companies to secure capacity on ships for between 1-20 years.
+Pricing for LNG shipment is extremely volatile and dependent on a number of factors.
+Firstly, ship availability and distance from the port of call.
+Distance to and from pickup to dropoff ports.
+Volume of shipment.
+Weather and sea conditions.
+Port congestion. Pricing for shipping has exceeded $200,000 USD per day of voyage in some cases, with prices highly dependent on time of year and market conditions. The cost per MMBTU fluctuates between $0.50 - $10.00+ USD. Often at peak during cold snaps in LNG demanding markets or when ship availability is low.
+Source: GlobalLNGHub, LNG Carrier Charter prices, Prompt Atlantic Vs Pacific
+Impact. LNG exports are now the single largest incremental driver of U.S. natural gas consumption, pulling about 12 Billion cubic feet per day in 2024. Because most LNG offtake contracts are indexed to Henry Hub, every cargo ties U.S. supply and demand more tightly to global gas markets.
+If another 5 Bcf/d of LNG export capacity suddenly came online, U.S. balances would tighten sharply: Henry Hub prices would rise as domestic supply has to stretch further, storage would drain faster, and basis spreads across the U.S. pipeline grid would widen. In effect, Henry Hub would shift closer to being a global gas benchmark rather than a purely North American one.
+Production. Some of the largest LNG liquefication plants lie along the shores of the Gulf Coast. All of which are directly linked to Henry Hub.
+image/svg+xmlNorth America liquefied natural gas export facilities,
+existing and under construction
+(2016‒2027)
+Source: EIA. LNG liquification facilities.
+Consumption & Downstream (Who Buys It)
+U.S. Natural Gas Use (112 Bcf/d total)
+Power Generation (36%) – 40 Bcf/d (residential, industrial, data centers).
+Industrial (23%) – 26 Bcf/d (refining, petrochem, fertilizer).
+Exports (20%) – 22 Bcf/d total.
+LNG Exports (12%) – 11.9 Bcf/d (Europe ~6.3, Asia ~4).
+Pipeline Exports (8%) – 10 Bcf/d (Mexico ~6%, Canada ~2%).
+Residential (12%) – 13 Bcf/d (heating, cooking, dryers).
+Commercial (9%) – 10 Bcf/d (heating, water heating).
+Source: Mitsubishi, Natural Gas Turbine for power generation
+Canada Natural Gas Use (20.3 Bcf/d total)
+Exports to U.S. (48%) – 8.8 Bcf/d.
+Midwest ~3.7 Bcf/d
+West ~3.4 Bcf/d
+East ~1.0 Bcf/d
+Industrial (30%) – (oil sands, mining, petrochem).
+Power, Residential & Commercial (21%)
+Downstream Players that Impact Henry Hub
+Power Generators – Utilities & IPPs
+Burn gas to spin turbines → electricity.
+Alberta: TransAlta, Capital Power (Genesee).
+U.S.: NRG Energy, Vistra.
+Key metric: Spark Spread = Power Price − (Gas Price × Heat Rate).
+Heat Rate = efficiency of plant (lower = more efficient).
+Hedge spark spread = lock in gas with Henry Hub futures, sell power forwards.
+Local Distribution Companies & Utilities
+Buy wholesale gas (high pressure), deliver to homes & small businesses (low pressure).
+Rely on storage & seasonal planning.
+Alberta: ATCO Gas, DERS.
+U.S.: Highly local (e.g., Con Edison, SoCalGas).
+Industrials
+Heavy users with direct hookups to transmission pipelines.
+Their consumption can impact Henry Hub pricing.
+Examples: Nutrien, Dow Chemicals, Refineries.
+Key Risks
+Natural disasters can cause damage to pipelines and other natural gas infrastructure or force the evacuation of essential personnel
+In 2005 Hurricane Katrina struck Louisiana and forced the shut down of Henry Hub for the duration of the evacuation
+The NYMEX suspended the trading of natural gas futures from September 22 to October 7, 2005
+Capacity constraints also pose a risk to the natural gas market
+A bottleneck at a major transfer point such as Henry Hub could cause price distortions that do not represent real supply and demand
+Form a Market View
+series
+trend_strength
+seasonal_strength_year
+seasonal_peak_year
+seasonal_trough_year
+spikiness
+linearity
+curvature
+stl_e_acf1
+stl_e_acf10
+NG.SpotPrice
+0.7753
+0.0748
+9.0000
+3.0000
+0.0001
+2.9473
+−2.4621
+0.5410
+0.7234
+The STL decomposition of Henry Hub natural-gas spot prices reveals that the series is dominated by strong long-term structural trend. Prices rise most often in late summer and bottom around March, consistent with North-American storage cycles. The 2020–2022 surge reflects exogenous shocks (COVID recovery, Russia–Ukraine war).
+Supply Demand Indicators
+Basic Supply and Demand Balance.
+Market View
+This graph illustrates daily spot price of a single MMBTu of natural gas from September of 2005 to September of 2025. Overall it shows prices on a slow but steady decline until late 2020 where prices begin to spike due to extreme weather, geopolitical events, and the temporary closure of an LNG facility.
+Timeline of Notable Disruptions
+2005: Hurricane Katrina forced the shutdown of Henry Hub and much of the natural gas infrastructure in the Gulf Coast region, constricting supply and causing a spike.
+2008: This spike coincided with an increase in demand for other energy commodities such as oil and coal, as well as increased investment in energy backed financial instruments.
+2021: This large jump coincides with the blackout in Texas brought on by extreme cold shutting down large segments of natural gas production in the US.
+2022: This climb was spurred on by the Russian invasion on Ukraine disrupting the European natural gas market and increasing demand for LNG. This situation was further aggravated by an explosion at the Freeport LNG liquefacation plant forcing it to shut down for three weeks.
+2024: A widespread cold snap in the US caused a temporary jump.
+What we can see from these events is that weather is responsible for some of the biggest single day jumps, but these extreme events are difficult to predict and cause severe capacity constraints. Similarly, geopolitical, industrial, and economic events can cause sustained price disruption but these are inconsistent and difficult to predict.
+Month
+Avg_Price
+January
+4.098772
+February
+4.140801
+March
+3.830297
+April
+3.930531
+May
+4.095117
+June
+4.217830
+July
+4.035896
+August
+3.993792
+September
+3.840000
+October
+3.840952
+November
+3.953342
+December
+3.953317
+Relevance:
+This is the jumping off point for further assessment of supply and demand.
+This basic assessment shows general trend, seasonality, and implied inventory changes as a result of over-supply, and over-demand.
+Implications:
+Seasonality of demand lead to fairly predictable implied storage increases and decreases. Using these swing periods, we can effectively assess when the market is in contango, or backwardation.
+Import and Exports.
+Relevance:
+Imports and exports make up a portion of demand and supply for NG. The export market includes LNG, and pipeline exports from the US.
+Implications:
+When trading location and time spreads, delivery location, time, and cost of transport are the largest concerns when initiating a trade.
+Seasonality of Demand.
+Relevance:
+Seasonality the largest driver of yearly price fluctuations in NG.
+Higher demand in winter caused by the increase in need for space heating in residential and commercial buildings, as well as power generation for lights. The winter demand spike is strongest between November and March.
+Summer demand spike caused by cooling needs. The summer demand spike occurs between June and September, where the increase in use of A/C’s and other cooling appliances leads to higher draw on the grid, requiring more power generation fueled by NG.
+Implications:
+Consistent, predictable yearly demand spikes caused by weather events can be leveraged in numerous ways. If a harsh winter or hot summer are expected, and demand is expected to be abnormally high or low for that particular season, there’s an opportunity to take advantage of the miss-pricing of later delivery contracts over current or vice versa.
+These yearly swings also create strong swings in storage levels. Because supply is generally a consistent level, unable to wildly based on weather alone (ignoring extreme, destructive weather events), this creates periods of time when supply exceeds demand, leading to an increase in stored quantities, and then subsequently periods when demand exceeds supply, leading to a decrease in stored quantities. These swings in storage, if extreme enough can also be leveraged in trading. If current levels of storage + production cannot meet demand in the short term, high demand periods, futures curves will reflect that. Causing gas prices to shoot up, anticipating a scarce pool of accessible dry gas.
+Demand by class.
+Relevance:
+Demand is distributed among many classes of users, such as residential, commercial, industrial, and power generation.
+Breaking demand into its component parts makes it easier to see the causes of seasonality in overall demand. In winter, residential demand peaks highest, above both industrial and commercial. However, in summer the demand for power generation significantly increases. Further proving the point above about heating season and cooling season demand.
+Implications:
+Being able to break demand into its component parts is vital in assessing the ebbs and flows of demand.
+Trading based on demand and news from individual components of demand rather than the summation of them can give us an edge. For example, if a large storm were to take out a portion of the US power grid, we would expect power generation gas demand to be down significantly in the affected area, whereas the demand would increase in other areas to make up for the shortfall of the area of the outage. Leading to both a location and time spread.
+Additional note:
+The difference between estimated total consumption, and real total consumption is likely due to exports. As exports are counted in consumption, but not represented in any of the granular consumption.
+Seasonality of Storage.
+This chart shows the amount of working gas in storage as a percentage of total storage capacity. Utilizing a percentage makes it possible to compare utilization year over year while accounting for the upwards trend of both total capacity and natural gas production.
+Relevance
+Working gas is pipeline ready and the easiest to move in response to shifts in demand or production.
+Storage utilization moves roughly inverse of demand.
+Implications
+During periods of low demand natural gas providers stock up in preparation for winter when ongoing production may have trouble keeping up with demand. This combined with the relatively low cost of storing natural gas compared to other commodities makes time spreads profitable for natural gas operators.
+The accessibility of storage also keeps production at a similar level year round, acting as a balancing tool so production does not see the same peeks and valleys as demand.
+LNG Imports and Exports
+Relevance
+LNG is the primary way to export natural gas overseas.
+Implications
+The increase in LNG exports implies the further globalization of the natural gas markets. This could increase Henry Hub’s sensitivity to global market shocks and the effects will become stronger as LNG exports continue to rise.
+Bars above 0 are Injections, bars below 0 are Withdrawals.  The big picture: clear seasonality. We inject through the shoulder and summer months to build inventory, and withdraw in winter to meet heating demand. The amplitude of these swings reflects weather and market conditions.
+The U.S. has been a net exporter for several years. Exports trending higher over time while imports are relatively flatter. The widening gap generates steadily positive net exports. This reflects both structural growth in LNG capacity and strong pipeline flows to Mexico, alongside stable Canadian import dynamics.
+Breaking exports into pipeline and LNG clarifies what’s driving growth. Pipeline exports, primarily to Mexico, trend upward but more gradually. LNG, however, show step-ups that are present because of new liquefaction trains coming around.
+On the import side, pipeline imports from Canada dominate, while LNG imports are small and occasional.
+This chart shows net exports separately for pipeline and LNG. LNG net exports contribute the largest incremental gains. Pipeline net exports are positive and growing, anchored by flows to Mexico and modest imports from Canada. This split helps us attribute the U.S. net export position: LNG is the swing engine; pipeline is the steady baseline.
+Here is the month-by-month distribution of storage changes. The median pattern reinforces what we saw: injections are concentrated in late spring through early fall; withdrawals cluster in the winter months.
+Desired Exposure
+In hindsight, we should have implemented more risk analysis in our trading. For example, on October 10, we went long 500 contracts on the Jan 2026 - Nov 2026 time spread. In actuality, we should have considered our desired daily exposure. If this number was $500,000 daily PL, we should have been long 876 contracts (calculated below as 500,000 divided by the standard deviation of daily change in the spread per contract).
+[1] 876.9156
+Monetization Strategies
+I am going to briefly touch on delivery location, grade, and delivery timing spreads, and why we chose to/not to pursue each.
+Location Spreads
+Our first trade was on the spread of Henry Hub (NG) vs JKM (Japan-Korea Marker). We learned quickly that we were naive to think that the two markets should behave similarly. Our hypothesis was that JKM was trading at an abnormally high premium to NG. The teaching moment here came when it was discovered that there was a shortage in turbines in Asia that are capable of producing energy from natural gas. This created a shock in demand, resulting in JKM increasing, and our PL for that day being -$525,000. At this point, we decided to exit the position due to realizing how little we actually understood about the Asian natural gas market.
+Grade Spreads
+In the trading game, we only had access to a select few products to trade. In the case of natural gas, the only products eligible for grade spread trading are Gasoline and Ethanol. After being lucky to escape our time spread trade at a profit, we decided that grade spreads carried the same risk, and we did not have enough time to learn about the Gasoline and Ethanol markets at depth.
+Time Spreads
+The stories above lead us to time spreads. Since we spent the majority of our human capital on understanding Henry Hub supply and demand balances, we decided that trading Time Spreads was safest.
+Risk Appetite
+In theory, risk appetite should be proportional to confidence in any given trade, while being constrained by limits placed by whoever is bankrolling the trade (ie. boss, loan, personal funds). However, due to the short time period of the game (only 1.5 months), we found it very hard to be purely objective in the trades. For example, after our time spread went against us for two days, we knew we were falling behind the rest of the groups, and only had a few weeks to catch up. Additionally, with about a week and left, we finally had a positive PL. This led to us being more risk-averse. The risk aversion, combined with no strong market calls, caused us to have 0 exposure over the last week of the trading game. A good trader should not let the success of other groups affect their strategy. The only scoreboard that should matter is personal PL, and not what other companies are doing.
+Execution
+For our team, execution is the area with the most room to improve. I will explain the rationale behind our trades, and where we can improve:
+Location Spread - Long NG, Short JKM
+This was our first trade. The rationale was that we projected LNG to continue to rapidly increase, while at the same time, Asian consumption would not grow at the same rate. By this logic, we thought that with supply increasing, and demand decreasing in East Asia, it would be a no-brainer that this spread would tighten. What we did not consider, however, was if this theory was already priced in. Additionally, we made forecasts using the prophet model, which basically just extrapolates the trend. Thirdly, we did not have any entry/exit levels, and essentially took a gamble on the trade. Lastly, the most obvious flaw in our logic was expecting a long-term macro shift to occur in the 1.5 month long trading game. Going forward, we would take trades on a shorter time horizon.
+Time Spread - Long January 2026 NG, Short November 2026 NG
+Our hypothesis for our second trade was seeing that the November 2026 contract was trading above the January 2026 contract. Based on what we knew about seasonality, this seemed strange. After learning some lessons from our last trade, we decided to look into factors that affect the NG price, to determine if we thought there was some mispricing.
+We found that while storage was higher than normal for the time of year, it wasn’t drastic enough to explain the mismatch. We also found that this winter is projected to be warmer than normal across the United States, but once again, not drastic enough to explain the mismatch. Needing a solid trade to get out of the red, and feeling like the curve will flip, we went Long NGF26 and Short NGX26.
+In hindsight, we should have figured out our entry/exit levels beforehand. This way, we can take emotions out of it, and strictly play objectively by the rules we set. We did not do this, but, it ended up working out okay. In the end, we exited the trade once the curve had flipped, and the Jan contract was trading above the Nov contract. It is worth noting that the run has continued. When we exited, Jan was about 10 cents higher than Nov, As of November 4, 2025, the spread is now about 20 cents, meaning we missed another 10 cents per mmBtu of upside.
+Profit and Loss (“PL” Attribution
+First I will show our cumulative PL from all trades, then break it down into its components.
+# A tibble: 10 × 3
+date       ticker        cost
+<chr>      <chr>        <dbl>
+1 2025-10-03 NGX2025   14276000
+2 2025-10-03 NGX2025   -6640000
+3 2025-10-03 JKMK2026 -20920000
+4 2025-10-06 NGX2025   13440000
+5 2025-10-08 JKMK2026  21320000
+6 2025-10-08 NGX2025  -20979000
+7 2025-10-10 NGF2026   20650000
+8 2025-10-10 NGX2026  -21000000
+9 2025-10-22 NGF2026  -21650000
+10 2025-10-22 NGX2026   21300000
+[1] "$203,000"
+PL From Location Spread
+[1] "-$497,000"
+PL From Time Spread
+[1] "$700,000"
+Lessons Learned
+A big thing we learned was how difficult it is to speculate in the futures markets without an information advantage. With relatively stale data, it feels like we are almost at the mercy of the next big Trump tweet, hoping we are betting on the right side. I now understand why successful commodity trading firms perform physical trading as opposed to speculating on markets at mass. The tides of the market are strong like the waves of the ocean, and it takes a crew with an amazing ship to ride the waves.
+Additionally, we learned that when preparation meets opportunity, success can come. A big mistake we made was taking our eyes off the markets last week. With exams, assignments, interviews, and life distracting us, we missed out when an opportunity came to re-use our key strategy of the time spread.
+Another big lesson relates to the classic Keynes quote: “The market can stay irrational longer than you can stay solvent.” This was shown in both of your trade strategies. Firstly, with the location spread, betting that LNG increases would decrease the differential between JKM and NG. That is a shift that will take years, maybe even decades. We could not realistically capture it in our month-long trading game. Also in our second trade, while we were confident, we were tested when our spread moved in the opposite direction for two straight days. Luckily, we kept our composure, and rode out the storm.
+Finally, the biggest takeaway for me was managing emotions as a trader. I found myself to be very disappointed when the trade I suggested to my team brought us into the red. Not only had I made a mistake, but felt like I let my team down. However, my team supported me through good and bad. This helped me realize that I can’t focus on the outcome, but the process. For example, a casino expects to win a hand of Blackjack 51% of the time. They will not agonize if they lose a big hand. If the process is correct, don’t agonize over the result.
+Appendix
+Weather
+October 21, 2025

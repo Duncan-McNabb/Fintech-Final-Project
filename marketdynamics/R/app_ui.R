@@ -114,6 +114,10 @@ app_ui <- function(request) {
         title = shiny::tagList(bsicons::bs_icon("shield-check"), " Hedge Ratios"),
         mod_hedge_ratio_ui("hedge_ratio_1")
       ),
+      bslib::nav_panel(
+        title = shiny::tagList(bsicons::bs_icon("bezier2"), " Simulation"),
+        mod_simulation_ui("simulation_1")
+      ),
 
       bslib::nav_spacer(),
       bslib::nav_item(

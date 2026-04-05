@@ -1,0 +1,155 @@
+name: Refresh Data
+
+on:
+  schedule:
+    - cron: '0 12 * * 1-5'   # 12:00 UTC (8am EST) every weekday
+  workflow_dispatch:           # allow manual trigger from GitHub UI
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write          # needed to push the updated feather files
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: '4.3.3'
+          use-public-rspm: true   # use Posit Package Manager for binary packages
+
+      - name: Cache R packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.R_LIBS_USER }}
+          key: r-data-refresh-${{ hashFiles('marketdynamics/DESCRIPTION') }}
+          restore-keys: r-data-refresh-
+
+      - name: Install CRAN dependencies
+        run: |
+          Rscript -e "
+            pkgs <- c('arrow', 'dplyr', 'httr', 'jsonlite', 'tibble',
+                      'lubridate', 'purrr', 'tidyr', 'tidyquant', 'remotes')
+            missing <- pkgs[!pkgs %in% rownames(installed.packages())]
+            if (length(missing) > 0) install.packages(missing)
+          "
+
+      - name: Install RTL from GitHub
+        run: |
+          Rscript -e "
+            if (!requireNamespace('RTL', quietly = TRUE))
+              remotes::install_github('patzlaw/RTL')
+          "
+
+      # ── Fetch 1: Energy futures data (RTL::dflong) ─────────────────────────
+      - name: Fetch energy data
+        run: |
+          Rscript -e "
+            library(RTL); library(dplyr); library(arrow)
+            df <- RTL::dflong
+            df\$market       <- sub('[0-9]+$', '', df\$series)
+            df\$contract_num <- as.integer(regmatches(df\$series,
+              regexpr('[0-9]+$', df\$series)))
+            df <- dplyr::filter(df, market %in% c('CL','BRN','NG','HO','RB'))
+            arrow::write_feather(df,
+              'marketdynamics/inst/extdata/energy_data.feather')
+            message('Energy rows: ', nrow(df))
+          "
+
+      # ── Fetch 2: EIA weekly petroleum & gas data ───────────────────────────
+      - name: Fetch EIA data
+        env:
+          EIA_KEY: ${{ secrets.EIA_KEY }}
+        run: |
+          Rscript -e "
+            library(httr); library(jsonlite); library(tibble)
+            library(dplyr); library(lubridate); library(purrr); library(arrow)
+
+            get_eia_series <- function(series_id, label, role) {
+              url <- paste0('https://api.eia.gov/v2/seriesid/', series_id,
+                            '?api_key=', Sys.getenv('EIA_KEY'))
+              res <- httr::GET(url)
+              js  <- jsonlite::fromJSON(httr::content(res, 'text', encoding = 'UTF-8'))
+              d   <- js\$response\$data
+              tibble::tibble(
+                role  = role,
+                label = label,
+                date  = as.Date(sub('T.*$', '', d\$period)),
+                value = as.numeric(d\$value)
+              ) |> dplyr::arrange(date)
+            }
+
+            tickers <- tibble::tribble(
+              ~role,                ~series_id,                          ~label,
+              'gasoline_supply',    'PET.WGFRPUS2.W',                   'Gasoline Production (kb/d)',
+              'gasoline_demand',    'PET.WGFUPUS2.W',                   'Gasoline Product Supplied (kb/d)',
+              'crude_stocks',       'PET.WCESTUS1.W',                   'U.S. Crude Stocks (kbbl)',
+              'padd1_crude_stocks', 'PET.WCESTP11.W',                   'PADD 1 Crude Stocks (kbbl)',
+              'padd2_crude_stocks', 'PET.WCESTP21.W',                   'PADD 2 Crude Stocks (kbbl)',
+              'padd3_crude_stocks', 'PET.WCESTP31.W',                   'PADD 3 Crude Stocks (kbbl)',
+              'padd4_crude_stocks', 'PET.WCESTP41.W',                   'PADD 4 Crude Stocks (kbbl)',
+              'padd5_crude_stocks', 'PET.WCESTP51.W',                   'PADD 5 Crude Stocks (kbbl)',
+              'refinery_runs',      'PET.WGIRIUS2.W',                   'Refinery Runs (kb/d)',
+              'cl_demand',          'PET.WRPUPUS2.W',                   'Total Petroleum Product Supplied (Mbbl/d)',
+              'ho_demand',          'PET.WDIUPUS2.W',                   'Distillate Product Supplied (Mbbl/d)',
+              'rb_exports',         'PET.W_EPM0F_EEX_NUS-Z00_MBBLD.W', 'Motor Gasoline Exports (Mbbl/d)',
+              'ng_storage',         'NG.NW2_EPG0_SWO_R48_BCF.W',       'US Natural Gas Storage (Bcf)',
+              'rig_count',          'PET.E_ERTRC_XR0_NUS_C.W',         'Baker Hughes US Rig Count'
+            )
+
+            eia_data <- purrr::pmap_dfr(tickers, function(role, series_id, label) {
+              message('Fetching: ', label)
+              tryCatch(
+                get_eia_series(series_id, label, role),
+                error = function(e) { message('FAILED: ', label, ' - ', e\$message); NULL }
+              )
+            }) |>
+              dplyr::filter(!is.na(value), date >= as.Date('2007-01-02'))
+
+            arrow::write_feather(eia_data,
+              'marketdynamics/inst/extdata/eia_data.feather')
+            message('EIA rows: ', nrow(eia_data))
+          "
+
+      # ── Fetch 3: US Treasury CMT yields (FRED via tidyquant) ──────────────
+      - name: Fetch CMT data
+        run: |
+          Rscript -e "
+            library(tidyquant); library(tidyr); library(dplyr); library(arrow)
+
+            cmt_tickers <- c('DGS1MO','DGS3MO','DGS6MO','DGS1','DGS2','DGS3',
+                             'DGS5','DGS7','DGS10','DGS20','DGS30')
+            tenor_map <- c(DGS1MO=1, DGS3MO=3, DGS6MO=6, DGS1=12, DGS2=24,
+                           DGS3=36, DGS5=60, DGS7=84, DGS10=120, DGS20=240, DGS30=360)
+
+            raw <- tidyquant::tq_get(cmt_tickers, get = 'economic.data',
+                                     from = '1990-01-01')
+            cmt_data <- raw |>
+              dplyr::rename(series = symbol, value = price) |>
+              dplyr::mutate(
+                market       = 'CMT',
+                contract_num = unname(tenor_map[series])
+              ) |>
+              dplyr::filter(!is.na(value)) |>
+              dplyr::select(date, series, market, contract_num, value)
+
+            arrow::write_feather(cmt_data,
+              'marketdynamics/inst/extdata/cmt_data.feather')
+            message('CMT rows: ', nrow(cmt_data))
+          "
+
+      # ── Commit & push if any feather file changed ──────────────────────────
+      - name: Commit updated data files
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add marketdynamics/inst/extdata/energy_data.feather \
+                  marketdynamics/inst/extdata/eia_data.feather    \
+                  marketdynamics/inst/extdata/cmt_data.feather
+          git diff --staged --quiet && echo "No data changes — skipping commit." \
+            || git commit -m "chore: auto-refresh market data $(date -u +%Y-%m-%d)"
+          git push

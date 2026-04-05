@@ -1,0 +1,174 @@
+TSP - Gasoline
+TSP - Gasoline
+Author
+Matt Morrow, Soumer Seifeddine, Yoan Lianto
+Published
+November 7, 2025
+About Your Commodity
+Gasoline VS. RBOB Futures
+Gasoline is a refined product made from crude oil. It’s a mixture of hydrocarbons, blended with ethanol and additives, and it’s the fuel that powers most cars on the road today. At the pump, we see different grades like regular, mid-grade, and premium. Those grades are determined by octane rating, which measures resistance to knocking in an engine. The gasoline you buy at the pump isn’t traded directly. Instead, the financial markets trade a standardized product called RBOB = Reformulated Blendstock for Oxygenate Blending. RBOB is basically unfinished gasoline: it has 87 octane, low sulfur, and no ethanol. Ethanol is added later at distribution terminals. In short, gasoline is the retail fuel, while RBOB is the wholesale benchmark, ticker symbol RB, that gets traded.
+How does gasoline gets to the pump?
+RBOB gets transported via pipelines to terminals. There, it gets blended with ethanol & additives. This mix is then transported to stations and stored in underground tanks. The different grades for gasoline are:  Regular : 87 octane  Midgrade : 89-90 octane  Premium : 91-93 octane
+Gasoline Production
+Gasoline is the second product of the refining process after propane/butane.
+This gasoline is still not ready for consumption by law. (High emissions)
+RBOB is either blended with ethanol on site (if it is close to the final destination), or it is then pumped to specialized blending facilities close to the consumption point (stations).
+The reason for this is that ethanol can not be transported via pipelines because it would corrode them.
+After blending, RBOB becomes RFG (Reformulated Gasoline) and is transported via tanker trucks to the stations.
+Another type of gasoline is CBOB. The main difference between the two is that RBOB is harder to produce (lower Reid Vapor Pressure). While both are blended with ethanol, RBOB is used in producing RFG which meets stricter environmental requirements and used in areas with heavy smog.
+Fun Fact: If a refinery receives 43 barrel of crude oil, it will output 46 barrels of refined products due to processing gain. Lower densities
+Gasoline Supply
+Because the USA is the largest producer and consumer of gasoline, we will mainly focus on the supply of gasoline in the US market.
+The US consumed ~9m bb/day in 2023, 95% of which was used for road transport
+To cover this huge demand, they use a mix of local production and imports
+In 2024, Canadian crude accounted for 60% of total US crude oil imports. This figure represented almost 82% of total Canadian crude produced that year!
+The majority of that Canadian crude was imported into the Gulf coast and Midwest refineries.
+The Midwest and Gulf coast incidentally contain the top 10 refineries by production quantities in the US along with the West Coast. (PADD 2,3, & 5)
+Each one of these refineries produces between 360 and 630 thousand barrels of gasoline per day. Fun Fact: PADD stands for US Petroleum Administration for Defense Districts - Started in WW2 and used to monitor and manage fuel and diesel supply & usage. Also used in the Korea war. Now they are mainly used to gather data for the EIA
+How does RBOB Futures trade?
+Contracts are listed for every calendar month, and while they are technically physically deliverable, most traders close or roll their positions before delivery. This setup allows for both hedging and speculation without the need to actually handle gasoline.
+What traders watch Seasonality (Summer Driving Season): Demand accelerates, inventories are often low, and EPA requires lower-volatility summer blends, which are more expensive to produce. volatility is the ease of evaporation
+Inventory surprises: Weekly EIA reports (Wednesdays 9:30 a.m. CT) on gasoline inventories, especially in PADD 1b (Central Atlantic), are closely watched. Inventories here indicate how much gasoline could be delivered into RBOB contracts. Deviations from expectations can quickly move prices.
+Disruptions
+Weather and operational events (hurricanes, flooding, refinery outages, pipeline issues) threaten supply. Traders watch these closely, as even the threat of production loss can lift RBOB futures.
+Most U.S. refining capacity is concentrated on the Gulf Coast (Texas and Louisiana). This makes gasoline production vulnerable to regional shocks.
+Hurricane season (June–November): Overlap with summer driving season and low inventories. Major storms (Harvey 2017, Ida 2021) forced multiple refineries offline, cutting millions of barrels of capacity.
+The Colonial Pipeline cyberattack (2021) shut flows to the East Coast for 5 days, causing shortages and a surge in New York Harbor prices. Terminals and storage hubs are also critical chokepoints.
+Recovery is slow. After a disruption, supply chains take weeks to normalize as pipelines refill and storage tanks rebuild. Low stocks amplify price impacts.
+Different gasoline grades (RBOB vs. CBOB) limit flexibility to reroute supply, making disruptions more persistent than in crude markets.
+Traders price in both the immediate loss of supply and the lag in recovery. RBOB futures often react sharply, with calendar spreads and crack spreads used to express views on disruption risk.
+Supply Demand Indicators
+# A tibble: 128 × 3
+date       EPOBG EPOBGRR
+<date>     <dbl>   <dbl>
+1 2025-08-01 66670   11804
+2 2025-07-01 64646   11322
+3 2025-06-01 59300    9098
+4 2025-05-01 60402    9339
+5 2025-04-01 56070    7460
+6 2025-03-01 59593    6924
+7 2025-02-01 57237    5761
+8 2025-01-01 60243    6168
+9 2024-12-01 60565    7287
+10 2024-11-01 56813    6800
+# ℹ 118 more rows
+# A tibble: 531 × 16
+date       R10_EPM0C R10_EPM0F R10_EPM0R R20_EPM0C R20_EPM0F R20_EPM0R
+<date>         <dbl>     <dbl>     <dbl>     <dbl>     <dbl>     <dbl>
+1 2025-10-31      1994      3177      1184      2153      2500       348
+2 2025-10-24      2104      3296      1192      2153      2504       352
+3 2025-10-17      2049      3211      1162      2200      2552       353
+4 2025-10-10      2031      3218      1187      2202      2546       344
+5 2025-10-03      2073      3248      1175      2148      2455       307
+6 2025-09-26      2068      3237      1169      2166      2509       343
+7 2025-09-19      2045      3178      1134      2204      2545       341
+8 2025-09-12      2047      3174      1127      2154      2486       332
+9 2025-09-05      2025      3136      1111      2115      2417       301
+10 2025-08-29      2065      3235      1170      2176      2524       348
+# ℹ 521 more rows
+# ℹ 9 more variables: R30_EPM0C <dbl>, R30_EPM0F <dbl>, R30_EPM0R <dbl>,
+#   R40_EPM0C <dbl>, R40_EPM0F <dbl>, R40_EPM0R <dbl>, R50_EPM0C <dbl>,
+#   R50_EPM0F <dbl>, R50_EPM0R <dbl>
+Error: object 'combined_df' not found
+Error: object 'demand_monthly' not found
+Error: object 'combined_df' not found
+Error: object 'exports_monthly' not found
+Error: object 'combined_df' not found
+Error: object 'imports_monthly' not found
+Error: object 'combined_df' not found
+Error: object 'supply_monthly' not found
+Supply Demand Indicators
+Executive Summary:
+Question to answer:
+Can gasoline price changes be predicted using inventory levels, crack spreads, utilization, or other factors?
+What are inventories and why they matter:
+Supply and demand are in a continuous tug-of-war game and the winner alternates between the two. Inventory is the balancing factor between them that keeps the rope stable.
+When demand exceeds supply, the excess gasoline is put into storage (inventory build up).
+When the opposite occurs, the shortfall is covered by inventories (draw down)
+These build ups/draw downs are used by analysts as indicators of price direction, market demand, refinery outages etc…
+Relationship between inventory levels and futures curve
+Inventories have a higher impact on short-term and spot prices of gasoline, especially relating to inventory suprises
+Backwardated markets provide the incentive for companies to draw down inventories and sell RBOB in the spot market over storing it for later sales
+Markets in contango give the incentive to store gasoline and sell in the futures market for higher prices.
+Supply
+Error: object 'supply_season' not found
+Error: object 'supply_plotly' not found
+Refinery Output: Factors Influencing Output
+Utilization Rate: the % of total operable capacity that is being used
+Planned (post winter & pre summer maintenance) & unplanned outages. (Inventories and Utilization rates are used by analysts to catch outages)
+Market signals: If crack spread is high, utilization will remain higher even if inventory levels are high. Refineries are a business, and will optimize profits.
+Crude supply: High supply/inventories support refinery operations if demand and market conditions are favorable. If crude levels drop, while RBOB demand remains elevated, then utilization could drop due to a bottleneck in supply.
+Yields: the ratios of refined products produced (%)
+Seasonality and RVP: Summer gasoline has lower RVP and is harder/more expensive to make
+Crack spread: Refineries can tweak product yield to optimize profits. This depends on refinery complexity and input qualities. (If it has a coker or not, and if its heavy vs light crude)
+Refineries usually have short-term drop in utilization/gasoline production in sep for a few reasons - slow down in demand, focus on distillate production instead
+Blender Output:
+Ethanol Supply and Prices:
+If RBOB inventories/production are flat/falling in the short-term, high blending activity can somewhat relieve the pressure off RBOB because it is a volumetric addition (10% ethanol & 90% gasoline)
+Demand:
+Error: object 'demand_season' not found
+Error: object 'p_demand_season' not found
+Consumption:
+Seasonality: Summer driving season is reflected by higher consumption/demand than the winter season
+~95% of total demand is used for road transportation (miles traveled)
+Prices are higher in the summer because of regulations (lower RVP req’d)
+Exports: -High in winter:
+Error: object 'exports_season' not found
+Error: object 'p_exports_season' not found
+Gasoline is usually exported to Latin America countries to meet the demand of driving season in those countries (Mexico is the highest among them)
+Could also be exported and sold on other exchanges if the opportunity arises (Amsterdam exchange ARA)
+Balancing Factor
+Inventories:
+Inventory drawdown generally indicates demand is outpacing supply, which leads to higher spot prices
+Inventory surplus usually has the opposite effect (short term graph here)
+Seasonality: Inventory changes usually follow a seasonal trend.
+Inventory in Summer is used up to meet demand, built back up in Winter
+When the switch to higher RVP gasoline occurs, inventories drop as tanks are turned around to avoid mixing summer and winter gasoline. (Leftovers are sold quickly on sale, or blended later on with winter gasoline / butane)
+Build up in October of Winter gasoline, and draw down in November due to exports
+Crack Spreads
+Each line shows RBOB-WTI for march/april contract in different year. September is used here to capture the switch from summer to winter gasoline. April is used to capture the switch from winter to summer gasoline. The spread is wider on September compared to April. Margin for refineries are tighter due to added cost for summer blend gasoline.
+Trading Lessons:
+Take on more risk if you are confident in your model and market view.
+Unplanned events surprise everyone, hedge your trades.
+Keep up with the news!
+Know what you trade.
+Summary
+What’s changed
+At the beginning of the simulation, RBOB was trading at 1.86 for the November contract which we thought was too high given current market conditions. So we decided to short 5 RBOB contracts without hedging flat price risk. RBOB moved down to 1.83 shortly after, at which point we decided to increase our exposure to price movements as we believed that it would still fall further as we move into the winter and wanted to reap more gains. For this trade, we attempted to minimize our risk to flat price by trading the crack spread between RBOB and CL, however, we mistakenly bought BK (WTI Financial swap) contracts instead of CL.
+By the end of the simulation, RBOB rose in price to reach 1.91 after Trump introduced more sanctions on Russian oil while crude inventories have also been declining, which led to a surge in Crude oil prices that translates into a rise in RBOB prices as well.
+Current Exposure
+After the increase in RBOB prices, we incurred large losses, and so thought that we would keep our short positions in RBOB as long as we could, until crude oil prices fell back down and pull RBOB prices with them. We attempted to close our positions on October 31st which is the last trading day for RBOB on the CME, but the simulation would not allow us to do so. This caused us to have open positions in RBOB when trading terminated, meaning that we now would have to deliver 12.8 million barrels of RBOB to our counterpart. To do so, we would need to buy RBOB at the spot prices and deliver it for 1.83.
+New Trades if any
+No new trades
+Form a Market View
+Low to moderate risk, also want enough liquidity to cover margin calls, and enough space to our limit to adjust depending on market conditions
+Market View
+From the SD Balance graph, supply and demand closely tracks each other. Balances in implied stock change are relatively neutral. There is no major over/under stocking. In RBOB/WTI spread graphs, the margin is wider for september with demand rising leading to winter months. This lead us to believe that the market is balanced to slightly bullish in the short term.
+Desired Exposure
+Before we began trading, we checked to see what our trading limits were to ensure we are not penalized for exceeding the limits. As we entered our second set of trades, we wanted to make sure that we still had extra room to trade additional contracts in case we needed to adjust our positions and/or exposure. Another point we considered is having a minimum maintenance margin to avoid having our positions closed for failing to meet the maintenance margin requirements, which would be applicable in a real world situation.
+Monetization Strategies
+Evidence of exploring what we have covered in class.
+How do you take those further with exploring various combinations along the grade, delivery location and delivery timing axis.
+Diligence in being nimble in those in light of evolving market context. Talk about different strategies we looked at (refining economics/location spreads etc..)
+Trading RBOB components (ethanol vs rbob) and CBOB vs RBOB
+Risk Appetite
+When it came to risk, we were highly risk averse in the beginning, but realized we would not be able to reap any material benefits by having very limited exposure to the market. So we shifted our stance and took on a moderate amount of risk, the reason being that we wanted to be able to maintain our margin so we do not get closed out while also having contracts available so we can adjust our positions as needed given changes in market conditions without exceeding our limits.
+Execution
+What trades are you executing?
+we started with 5 contracts of RB, then 300 RB, 300 BK
+Rationale stated clearly?
+In the beginning, we are unsure of how this will play out. Hence, the low risk. Overtime, we are starting to have more information from SD Balances, so we increased our risk appetite. Along the way, we have made a mistake of opening a position in BK instead of CL. At that point in time, we were attempting to move from flat price to crack spread.
+Entry/ Exit levels stated?
+We closed our position on the same day the contract expires, which we have found that “it’s too late, and should have been done earlier due to the delay in the order”
+Profit and Loss (“PL” Attribution
+For each strategy:
+Provide a grid of PL attribution by risk factors (flat price, time spread, crack,)
+Is it in line with your market call? Learnings…
+Lessons Learned
+What have you learned from this project? Researching RBOB market dynamics and attempting to capitalize on a market view has been a very challenging but rewarding experience. We learned a lot about the hidden layers and processes that we take for granted every day (go to station and pump gas) and noticed that the deeper we looked, the further the bottom of the hole became. In fact, it is a bottomless pit.
+Trading any commodity is not easy, and trying to form a profitable market view using publicly available information is very difficult. Privileged information flow gives traders an edge in reading and capitalizing on market signals.
+We also learned 2 fundamental trading lessons. One of them is to keep track of your positions, and make note of when trading terminates for each contract you enter. Another is being very careful when entering your trades to enter the correct contract, and commodity.
+Questions for Weekly Meeting with Prof
+We addressed issues of going into the rabbit hole with our research by asking how we can organize our thoughts better.
+How we could come up with forecast because using prophet was not the best tool.
+How we could pick relevant variables because there are many pieces that goes into Gasoline

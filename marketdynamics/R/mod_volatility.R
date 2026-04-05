@@ -54,6 +54,7 @@ mod_volatility_ui <- function(id) {
         )
       )
     ),
+    shiny::uiOutput(ns("plot_context")),
     bslib::card(
       bslib::card_body(
         plotly::plotlyOutput(ns("vol_plot"), height = "50vh")
@@ -145,6 +146,15 @@ mod_volatility_server <- function(id, r) {
       labels <- c(CL = "WTI Crude", BRN = "Brent Crude", NG = "Natural Gas",
                   HO = "Heating Oil", RB = "RBOB Gasoline")
       unname(labels[input$energy_market])
+    })
+
+    output$plot_context <- shiny::renderUI({
+      shiny::req(input$view_type)
+      txt <- switch(input$view_type,
+        "rolling" = "Annualized rolling realized volatility for the selected contract. **Rolling Window** sets the lookback in trading days (21 \u2248 1 month). The orange band highlights periods above the 75th percentile \u2014 historically elevated vol regimes. Use **Series** to compare front-month vs. deferred contracts.",
+        "term"    = "Average annualized volatility by contract month across the full date range (Samuelson Effect). Near-term contracts are exposed to immediate supply/demand shocks and carry higher vol; deferred contracts are smoother. This term structure guides hedgers on which tenor to use."
+      )
+      shiny::tags$p(class = "text-muted px-2", style = "font-size:0.85rem;", shiny::HTML(txt))
     })
 
     output$vol_plot <- plotly::renderPlotly({

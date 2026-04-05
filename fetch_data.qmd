@@ -87,9 +87,53 @@ message("Energy data: ", nrow(df), " rows")
   }) %>% 
     dplyr::filter(date >= as.Date("2007-01-02"))
 
-  arrow::write_feather(eia_data, here::here("inst/extdata/eia_data.feather"))
+  arrow::write_feather(eia_data, here::here("marketdynamics/inst/extdata/eia_data.feather"))
 
 
+```
+
+
+```{r}
+# Re-fetch rig count only and append to existing EIA feather
+# Run this chunk if rig_count is missing from eia_data.feather
+
+library(httr)
+library(jsonlite)
+library(tibble)
+library(dplyr)
+library(lubridate)
+library(arrow)
+library(here)
+
+EIAkey <- Sys.getenv("EIA_KEY")
+
+feather_path <- here::here("marketdynamics/inst/extdata/eia_data.feather")
+existing     <- arrow::read_feather(feather_path)
+
+if (!"rig_count" %in% unique(existing$role)) {
+  message("rig_count missing — fetching from EIA...")
+
+  url <- paste0("https://api.eia.gov/v2/seriesid/PET.E_ERTRC_XR0_NUS_C.W",
+                "?api_key=", EIAkey)
+  res <- httr::GET(url)
+  js  <- jsonlite::fromJSON(httr::content(res, "text", encoding = "UTF-8"))
+  d   <- js$response$data
+
+  rig_df <- tibble::tibble(
+    role  = "rig_count",
+    label = "Baker Hughes US Rig Count",
+    date  = as.Date(sub("T.*$", "", d$period)),
+    value = as.numeric(d$value)
+  ) |>
+    dplyr::filter(!is.na(value), date >= as.Date("2007-01-02")) |>
+    dplyr::arrange(date)
+
+  combined <- dplyr::bind_rows(existing, rig_df)
+  arrow::write_feather(combined, feather_path)
+  message("Appended ", nrow(rig_df), " rig count rows. Total: ", nrow(combined))
+} else {
+  message("rig_count already present — skipping.")
+}
 ```
 
 

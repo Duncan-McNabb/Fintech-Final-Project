@@ -54,6 +54,7 @@ mod_codynamics_ui <- function(id) {
         )
       )
     ),
+    shiny::uiOutput(ns("plot_context")),
     bslib::card(
       bslib::card_body(
         plotly::plotlyOutput(ns("cody_plot"), height = "50vh")
@@ -149,6 +150,18 @@ mod_codynamics_server <- function(id, r) {
     all_returns <- shiny::reactive({
       shiny::req(combined_data())
       compute_log_returns(combined_data())
+    })
+
+    output$plot_context <- shiny::renderUI({
+      shiny::req(input$view_type)
+      txt <- switch(input$view_type,
+        "rolling"       = "Pearson correlation between the log returns of **Series A** and **Series B**, computed over a sliding window. **Rolling Window** sets the lookback in trading days (63 \u2248 1 quarter). The red dashed line is the full-period average. Correlation breakdowns (drops toward 0 or negative) often coincide with market dislocations.",
+        "scatter"       = "Daily log returns of Series A (x-axis) vs. Series B (y-axis), colored by year. The dashed regression line shows the OLS beta \u2014 the slope of the linear relationship. Tight clusters = stable co-movement; wide scatter = weaker linkage.",
+        "pca"           = "Principal Component Analysis of daily log returns across all energy front months and US Treasury yields. Each point is a series; proximity means they load similarly on the first two principal components. PC1 captures the dominant market-wide factor; PC2 captures the second-order divergence (e.g., energy vs. rates).",
+        "treasury"      = "US Treasury Constant Maturity yields from 1-month to 30-year, plotted over time. The bold black line is the 10-year yield. Hover shows benchmark tenors. Curve shape (steep, flat, inverted) signals the bond market\u2019s view on growth and Fed policy.",
+        "yield_spreads" = "Classic recession indicators: the 2s10s spread (10-year minus 2-year yield) and 3m10y spread (10-year minus 3-month yield), in basis points. Negative values (red zone) = inverted curve, which has preceded every US recession since the 1970s."
+      )
+      shiny::tags$p(class = "text-muted px-2", style = "font-size:0.85rem;", shiny::HTML(txt))
     })
 
     output$cody_plot <- plotly::renderPlotly({

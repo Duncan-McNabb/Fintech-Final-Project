@@ -80,6 +80,7 @@ mod_hedge_ratio_ui <- function(id) {
         )
       )
     ),
+    shiny::uiOutput(ns("plot_context")),
     bslib::card(
       bslib::card_body(
         plotly::plotlyOutput(ns("hr_plot"), height = "50vh")
@@ -217,6 +218,15 @@ mod_hedge_ratio_server <- function(id, r) {
       labels <- c(CL = "WTI Crude", BRN = "Brent Crude", NG = "Natural Gas",
                   HO = "Heating Oil", RB = "RBOB Gasoline")
       unname(labels[input$energy_market])
+    })
+
+    output$plot_context <- shiny::renderUI({
+      shiny::req(input$view_type)
+      txt <- switch(input$view_type,
+        "rolling" = "The hedge ratio over time, computed using the selected **Method** over a **Rolling Window**. **OLS Beta** is the regression slope of Exposure returns on Hedge returns; **Min Variance** minimizes portfolio variance using rolling correlation and vol. The red dashed line is the trailing 1-year average. A ratio of 1.0 means a 1:1 hedge; values above 1 mean you need more hedge contracts per unit of exposure.",
+        "scatter" = "Daily log returns of the Hedge Instrument (x-axis) vs. the Exposure Series (y-axis), colored by year. The dashed line is the current hedge ratio \u2014 its slope shows how many units of hedge are needed per unit of exposure. Tighter scatter around the line = more effective hedge."
+      )
+      shiny::tags$p(class = "text-muted px-2", style = "font-size:0.85rem;", shiny::HTML(txt))
     })
 
     output$hr_plot <- plotly::renderPlotly({

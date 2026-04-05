@@ -183,6 +183,19 @@ R/mod_inputs.R
 
 ---
 
+## UI Anti-Patterns
+
+**Building heatmap charts**
+```
+# WRONG — heatmaps have been removed from this app
+plotly::plot_ly(type = "heatmap", ...)
+
+# RIGHT — use line charts or bar charts only
+plotly::plot_ly(type = "scatter", mode = "lines", ...)
+```
+
+---
+
 ## Performance Anti-Patterns
 
 **Loading all of `RTL::dflong` on every reactive trigger**
