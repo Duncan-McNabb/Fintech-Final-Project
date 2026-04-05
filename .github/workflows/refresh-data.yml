@@ -20,7 +20,7 @@ jobs:
         uses: r-lib/actions/setup-r@v2
         with:
           r-version: '4.3.3'
-          use-public-rspm: true   # use Posit Package Manager for binary packages
+          use-public-rspm: true
 
       - name: Cache R packages
         uses: actions/cache@v4
@@ -33,34 +33,14 @@ jobs:
         run: |
           Rscript -e "
             pkgs <- c('arrow', 'dplyr', 'httr', 'jsonlite', 'tibble',
-                      'lubridate', 'purrr', 'tidyr', 'tidyquant', 'remotes')
+                      'lubridate', 'purrr', 'tidyr', 'tidyquant')
             missing <- pkgs[!pkgs %in% rownames(installed.packages())]
             if (length(missing) > 0) install.packages(missing)
           "
 
-      - name: Install RTL from GitHub
-        run: |
-          Rscript -e "
-            if (!requireNamespace('RTL', quietly = TRUE))
-              remotes::install_github('patzlaw/RTL')
-          "
-
-      # ── Fetch 1: Energy futures data (RTL::dflong) ─────────────────────────
-      - name: Fetch energy data
-        run: |
-          Rscript -e "
-            library(RTL); library(dplyr); library(arrow)
-            df <- RTL::dflong
-            df\$market       <- sub('[0-9]+$', '', df\$series)
-            df\$contract_num <- as.integer(regmatches(df\$series,
-              regexpr('[0-9]+$', df\$series)))
-            df <- dplyr::filter(df, market %in% c('CL','BRN','NG','HO','RB'))
-            arrow::write_feather(df,
-              'marketdynamics/inst/extdata/energy_data.feather')
-            message('Energy rows: ', nrow(df))
-          "
-
-      # ── Fetch 2: EIA weekly petroleum & gas data ───────────────────────────
+      # ── Fetch 1: EIA weekly petroleum & gas data ───────────────────────────
+      # Energy futures (RTL::dflong) are a static bundled dataset — only changes
+      # when the RTL package is updated.  Refresh manually via fetch_data.qmd.
       - name: Fetch EIA data
         env:
           EIA_KEY: ${{ secrets.EIA_KEY }}
@@ -115,7 +95,7 @@ jobs:
             message('EIA rows: ', nrow(eia_data))
           "
 
-      # ── Fetch 3: US Treasury CMT yields (FRED via tidyquant) ──────────────
+      # ── Fetch 2: US Treasury CMT yields (FRED via tidyquant) ──────────────
       - name: Fetch CMT data
         run: |
           Rscript -e "
@@ -147,8 +127,7 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add marketdynamics/inst/extdata/energy_data.feather \
-                  marketdynamics/inst/extdata/eia_data.feather    \
+          git add marketdynamics/inst/extdata/eia_data.feather \
                   marketdynamics/inst/extdata/cmt_data.feather
           git diff --staged --quiet && echo "No data changes — skipping commit." \
             || git commit -m "chore: auto-refresh market data $(date -u +%Y-%m-%d)"
