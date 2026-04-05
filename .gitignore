@@ -1,8 +1,18 @@
+# Ignore everything at the repo root by default
+/*
+
+# Keep these directories
+!marketdynamics/
+!.github/
+
+# Keep the .gitignore itself
+!.gitignore
+
+# Standard R ignores (inside marketdynamics/)
+marketdynamics/man/*.Rd
 .Renviron
 .Rhistory
 .RData
-*.Rproj.user
-marketdynamics/man/*.Rd
+.Rproj.user
 .DS_Store
 **/.DS_Store
-.Rproj.user
