@@ -6,14 +6,6 @@
 mod_volatility_ui <- function(id) {
   ns <- NS(id)
 
-  energy_markets <- c(
-    "WTI Crude (CL)"     = "CL",
-    "Brent Crude (BRN)"  = "BRN",
-    "Natural Gas (NG)"   = "NG",
-    "Heating Oil (HO)"   = "HO",
-    "RBOB Gasoline (RB)" = "RB"
-  )
-
   shiny::tagList(
     bslib::card(
       bslib::card_header(
@@ -21,16 +13,12 @@ mod_volatility_ui <- function(id) {
       ),
       bslib::card_body(
         shiny::fluidRow(
-          shiny::column(3,
-            shiny::selectInput(ns("energy_market"), "Energy Market",
-              choices = energy_markets, selected = "CL")
-          ),
-          shiny::column(4,
+          shiny::column(5,
             shiny::dateRangeInput(ns("date_range"), "Date Range",
               start = "2007-01-02", end = Sys.Date(),
               min   = "2007-01-02", max = Sys.Date())
           ),
-          shiny::column(3,
+          shiny::column(5,
             shiny::selectInput(ns("ticker"), "Series", choices = NULL)
           ),
           shiny::column(2,
@@ -81,9 +69,9 @@ mod_volatility_server <- function(id, r) {
 
     # Primary market data load
     shiny::observeEvent(
-      list(input$energy_market, input$date_range),
+      list(r$market, input$date_range),
       ignoreNULL = TRUE, ignoreInit = FALSE, {
-        shiny::req(input$energy_market, input$date_range)
+        shiny::req(r$market, input$date_range)
 
         output$load_status <- shiny::renderUI({
           shiny::tags$small(class = "text-muted", "Loading...")
@@ -93,7 +81,7 @@ mod_volatility_server <- function(id, r) {
         end   <- as.Date(input$date_range[2])
 
         data <- tryCatch(
-          load_energy_data(input$energy_market, start, end),
+          load_energy_data(r$market, start, end),
           error = function(e) {
             output$load_status <- shiny::renderUI({
               shiny::tags$small(class = "text-danger", "Error loading data")
@@ -114,17 +102,17 @@ mod_volatility_server <- function(id, r) {
     )
 
     shiny::observeEvent(
-      list(input$energy_market, input$date_range),
-      ignoreNULL = TRUE, ignoreInit = TRUE, {
-        shiny::req(input$energy_market, input$date_range)
-        if (!input$energy_market %in% c("CL", "HO", "RB")) {
+      list(r$market, input$date_range),
+      ignoreNULL = TRUE, ignoreInit = FALSE, {
+        shiny::req(r$market, input$date_range)
+        if (!r$market %in% petro_markets) {
           petro_data(NULL)
           return()
         }
         start <- as.Date(input$date_range[1])
         end   <- as.Date(input$date_range[2])
         pd <- tryCatch(
-          load_energy_data(c("CL", "HO", "RB"), start, end) |>
+          load_energy_data(petro_markets, start, end) |>
             dplyr::filter(.data$contract_num == 1),
           error = function(e) NULL
         )
@@ -132,20 +120,13 @@ mod_volatility_server <- function(id, r) {
       }
     )
 
-    shiny::observeEvent(r$market, {
-      shiny::req(r$market)
-      shiny::updateSelectInput(session, "energy_market", selected = r$market)
-    }, ignoreNULL = TRUE, ignoreInit = TRUE)
-
     returns_data <- shiny::reactive({
       shiny::req(energy_data())
       compute_log_returns(energy_data())
     })
 
     market_label <- shiny::reactive({
-      labels <- c(CL = "WTI Crude", BRN = "Brent Crude", NG = "Natural Gas",
-                  HO = "Heating Oil", RB = "RBOB Gasoline")
-      unname(labels[input$energy_market])
+      unname(market_labels[r$market])
     })
 
     output$plot_context <- shiny::renderUI({
@@ -264,16 +245,19 @@ mod_volatility_server <- function(id, r) {
     })
 
     output$market_context <- shiny::renderUI({
-      shiny::req(input$energy_market)
-      mkt <- input$energy_market
+      shiny::req(r$market)
+      mkt <- r$market
 
-      if (mkt %in% c("CL", "HO", "RB")) {
+      if (mkt %in% petro_markets) {
         bslib::card(
           bslib::card_header(
             shiny::tagList(bsicons::bs_icon("activity"), " Market Context: Outright vs. Crack Spread Volatility")
           ),
           bslib::card_body(
-            plotly::plotlyOutput(session$ns("crack_vol_plot"), height = "50vh")
+            plotly::plotlyOutput(session$ns("crack_vol_plot"), height = "50vh"),
+            shiny::tags$p(class = "text-muted", style = "font-size:0.9rem;",
+              "Crack spread volatility measures uncertainty in refinery margins \u2014 the difference between what refiners pay for crude and what they receive for refined products. Crack spreads can be significantly more volatile than outright crude prices because both legs move independently: crude reacts to global supply/demand fundamentals while product prices respond to seasonal demand, refinery outages, and regional infrastructure constraints. When crack spread vol exceeds crude vol, it typically signals refinery-specific disruptions or unusual product demand pressure rather than a crude market event."
+            )
           )
         )
 
@@ -301,9 +285,9 @@ mod_volatility_server <- function(id, r) {
     })
 
     output$crack_vol_plot <- plotly::renderPlotly({
-      shiny::req(petro_data(), input$energy_market, input$vol_window)
+      shiny::req(petro_data(), r$market, input$vol_window)
       cd  <- petro_data()
-      mkt <- input$energy_market
+      mkt <- r$market
 
       cl_px <- dplyr::filter(cd, .data$market == "CL") |>
         dplyr::arrange(date) |> dplyr::select(date, value) |> dplyr::rename(cl = value)
@@ -337,8 +321,12 @@ mod_volatility_server <- function(id, r) {
 
       crack_vol_df <- px_wide |>
         dplyr::mutate(
-          spd_ret   = (.data[[crack_col]] - dplyr::lag(.data[[crack_col]])) /
-                      abs(dplyr::lag(.data[[crack_col]])),
+          spd_ret   = dplyr::if_else(
+            abs(dplyr::lag(.data[[crack_col]])) > 1e-6,
+            (.data[[crack_col]] - dplyr::lag(.data[[crack_col]])) /
+              abs(dplyr::lag(.data[[crack_col]])),
+            NA_real_
+          ),
           crack_vol = zoo::rollapply(
             .data$spd_ret, width = input$vol_window,
             FUN = function(x) stats::sd(x, na.rm = TRUE) * sqrt(252) * 100,

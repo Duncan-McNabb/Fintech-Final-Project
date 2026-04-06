@@ -6,14 +6,6 @@
 mod_forward_curve_ui <- function(id) {
   ns <- NS(id)
 
-  energy_markets <- c(
-    "WTI Crude (CL)"     = "CL",
-    "Brent Crude (BRN)"  = "BRN",
-    "Natural Gas (NG)"   = "NG",
-    "Heating Oil (HO)"   = "HO",
-    "RBOB Gasoline (RB)" = "RB"
-  )
-
   shiny::tagList(
     bslib::card(
       bslib::card_header(
@@ -21,16 +13,12 @@ mod_forward_curve_ui <- function(id) {
       ),
       bslib::card_body(
         shiny::fluidRow(
-          shiny::column(3,
-            shiny::selectInput(ns("energy_market"), "Energy Market",
-              choices = energy_markets, selected = "CL")
-          ),
-          shiny::column(4,
+          shiny::column(6,
             shiny::dateRangeInput(ns("date_range"), "Date Range",
               start = "2007-01-02", end = Sys.Date(),
               min   = "2007-01-02", max = Sys.Date())
           ),
-          shiny::column(3,
+          shiny::column(4,
             shiny::radioButtons(ns("view_type"), "View",
               choices  = c(
                 "Curve Lines"     = "curves",
@@ -92,9 +80,9 @@ mod_forward_curve_server <- function(id, r) {
     rig_count_data <- shiny::reactiveVal(NULL)
 
     shiny::observeEvent(
-      list(input$energy_market, input$date_range),
+      list(r$market, input$date_range),
       ignoreNULL = TRUE, ignoreInit = FALSE, {
-        shiny::req(input$energy_market, input$date_range)
+        shiny::req(r$market, input$date_range)
 
         output$load_status <- shiny::renderUI({
           shiny::tags$small(class = "text-muted", "Loading...")
@@ -104,7 +92,7 @@ mod_forward_curve_server <- function(id, r) {
         end   <- as.Date(input$date_range[2])
 
         data <- tryCatch(
-          load_energy_data(input$energy_market, start, end),
+          load_energy_data(r$market, start, end),
           error = function(e) {
             output$load_status <- shiny::renderUI({
               shiny::tags$small(class = "text-danger",
@@ -117,7 +105,7 @@ mod_forward_curve_server <- function(id, r) {
         energy_data(data)
 
         # Load EIA crude stocks + rig count when WTI is selected
-        if (input$energy_market == "CL") {
+        if (r$market == "CL") {
           stocks <- tryCatch(
             load_eia_data(roles = "crude_stocks", start_date = start, end_date = end),
             error = function(e) NULL
@@ -144,10 +132,10 @@ mod_forward_curve_server <- function(id, r) {
     )
 
     shiny::observeEvent(
-      list(input$energy_market, input$date_range),
+      list(r$market, input$date_range),
       ignoreNULL = TRUE, ignoreInit = TRUE, {
-        shiny::req(input$energy_market, input$date_range)
-        if (input$energy_market != "BRN") {
+        shiny::req(r$market, input$date_range)
+        if (r$market != "BRN") {
           cl_brn_data(NULL)
           return()
         }
@@ -162,20 +150,13 @@ mod_forward_curve_server <- function(id, r) {
       }
     )
 
-    shiny::observeEvent(r$market, {
-      shiny::req(r$market)
-      shiny::updateSelectInput(session, "energy_market", selected = r$market)
-    }, ignoreNULL = TRUE, ignoreInit = TRUE)
-
     curve_data <- shiny::reactive({
-      shiny::req(energy_data(), input$energy_market)
-      pivot_wide(energy_data(), input$energy_market)
+      shiny::req(energy_data(), r$market)
+      pivot_wide(energy_data(), r$market)
     })
 
     market_label <- shiny::reactive({
-      labels <- c(CL = "WTI Crude", BRN = "Brent Crude", NG = "Natural Gas",
-                  HO = "Heating Oil", RB = "RBOB Gasoline")
-      unname(labels[input$energy_market])
+      unname(market_labels[r$market])
     })
 
     spread_stats <- shiny::reactive({
@@ -358,10 +339,24 @@ mod_forward_curve_server <- function(id, r) {
     })
 
     output$market_context <- shiny::renderUI({
-      shiny::req(input$energy_market)
-      mkt <- input$energy_market
+      shiny::req(r$market)
+      mkt <- r$market
 
       if (mkt == "CL") {
+        rig_card <- if (!is.null(rig_count_data()) && nrow(rig_count_data()) > 0) {
+          bslib::card(
+            bslib::card_header(
+              shiny::tagList(bsicons::bs_icon("tools"), " Market Context: WTI Crude \u2014 Price vs. Baker Hughes Rig Count")
+            ),
+            bslib::card_body(
+              plotly::plotlyOutput(session$ns("rig_count_plot"), height = "50vh"),
+              shiny::tags$p(
+                class = "text-muted mt-2", style = "font-size:0.9rem;",
+                "The Baker Hughes rig count is a leading indicator of US crude supply. Rising rig counts signal expanding production (bearish for price); falling counts signal supply curtailment (bullish). The lag between rig activity and production changes is typically 3\u20136 months."
+              )
+            )
+          )
+        }
         shiny::tagList(
           bslib::card(
             bslib::card_header(
@@ -375,18 +370,7 @@ mod_forward_curve_server <- function(id, r) {
               )
             )
           ),
-          bslib::card(
-            bslib::card_header(
-              shiny::tagList(bsicons::bs_icon("tools"), " Market Context: WTI Crude \u2014 Price vs. Baker Hughes Rig Count")
-            ),
-            bslib::card_body(
-              plotly::plotlyOutput(session$ns("rig_count_plot"), height = "50vh"),
-              shiny::tags$p(
-                class = "text-muted mt-2", style = "font-size:0.9rem;",
-                "The Baker Hughes rig count is a leading indicator of US crude supply. Rising rig counts signal expanding production (bearish for price); falling counts signal supply curtailment (bullish). The lag between rig activity and production changes is typically 3\u20136 months."
-              )
-            )
-          )
+          rig_card
         )
 
       } else if (mkt == "BRN") {
@@ -395,7 +379,10 @@ mod_forward_curve_server <- function(id, r) {
             shiny::tagList(bsicons::bs_icon("info-circle"), " Market Context: Brent Crude \u2014 WTI vs. Brent Price & Location Spread")
           ),
           bslib::card_body(
-            plotly::plotlyOutput(session$ns("wti_brn_plot"), height = "50vh")
+            plotly::plotlyOutput(session$ns("wti_brn_plot"), height = "50vh"),
+            shiny::tags$p(class = "text-muted", style = "font-size:0.9rem;",
+              "The WTI\u2013Brent spread reflects the price differential between North American landlocked crude (WTI at Cushing, OK) and the global seaborne benchmark (Brent). Historically trading at a small discount of $1\u20133/bbl, WTI cheapened dramatically vs. Brent from 2011\u20132014 as the US shale boom flooded Cushing while export infrastructure lagged. Post-2015 crude export liberalization and pipeline buildout have brought the spread back toward historical norms, though Cushing logistics bottlenecks can widen it rapidly during inventory builds."
+            )
           )
         )
 

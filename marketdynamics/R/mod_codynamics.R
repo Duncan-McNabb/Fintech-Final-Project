@@ -15,7 +15,7 @@ mod_codynamics_ui <- function(id) {
         shiny::fluidRow(
           shiny::column(5,
             shiny::dateRangeInput(ns("date_range"), "Date Range",
-              start = "2010-01-01", end = Sys.Date(),
+              start = "2007-01-02", end = Sys.Date(),
               min   = "2007-01-02", max = Sys.Date())
           ),
           shiny::column(4,
@@ -354,7 +354,24 @@ mod_codynamics_server <- function(id, r) {
         ret_mat <- compute_return_matrix(all_returns(), all_series_ids)
         shiny::req(nrow(ret_mat) > 5, ncol(ret_mat) > 1)
 
-        pca      <- stats::prcomp(ret_mat, scale. = TRUE)
+        # Replace non-finite values (Inf, -Inf, NaN) with NA, then drop
+        # incomplete rows. CMT yields near zero produce -Inf log returns
+        # which survive complete.cases but break prcomp.
+        ret_mat[!is.finite(ret_mat)] <- NA
+        ret_mat <- ret_mat[stats::complete.cases(ret_mat), , drop = FALSE]
+        shiny::req(nrow(ret_mat) > 30)
+
+        # Drop any zero-variance columns
+        col_sds <- apply(ret_mat, 2, stats::sd)
+        ret_mat <- ret_mat[, col_sds > 1e-10, drop = FALSE]
+        shiny::req(ncol(ret_mat) > 1)
+
+        pca <- tryCatch(
+          stats::prcomp(ret_mat, scale. = TRUE),
+          error = function(e) NULL
+        )
+        shiny::req(pca)
+
         pct_var  <- round(summary(pca)$importance[2, 1:2] * 100, 1)
         loadings <- as.data.frame(pca$rotation[, 1:2])
         loadings$series <- rownames(loadings)
@@ -383,20 +400,23 @@ mod_codynamics_server <- function(id, r) {
           plotly::add_lines(
             x = c(-max_pc1, max_pc1), y = c(0, 0),
             line = list(color = "lightgrey", dash = "dot"),
-            showlegend = FALSE, hoverinfo = "none"
+            showlegend = FALSE, hoverinfo = "none",
+            inherit = FALSE
           ) |>
           plotly::add_lines(
             x = c(0, 0), y = c(-max_pc2, max_pc2),
             line = list(color = "lightgrey", dash = "dot"),
-            showlegend = FALSE, hoverinfo = "none"
+            showlegend = FALSE, hoverinfo = "none",
+            inherit = FALSE
           ) |>
           plotly::layout(
             title  = "PCA Biplot \u2014 Market Factor Loadings",
             xaxis  = list(title = paste0("PC1 (", pct_var[1], "% variance explained)")),
             yaxis  = list(title = paste0("PC2 (", pct_var[2], "% variance explained)")),
+            margin = list(b = 80),
             legend = list(orientation = "h", x = 0, y = 1.08),
             annotations = list(list(
-              x         = 0.5, y = -0.12,
+              x         = 0.5, y = -0.22,
               xref      = "paper", yref = "paper",
               text      = "PC1 = parallel shift across markets; PC2 = slope / divergence",
               showarrow = FALSE,

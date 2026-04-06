@@ -22,7 +22,7 @@ RUN echo 'options(repos = c(CRAN = "https://packagemanager.posit.co/cran/__linux
 # Install CRAN packages (binary via RSPM — no source compilation)
 RUN R -e "install.packages(c( \
     'shiny', 'golem', 'bslib', 'bsicons', 'plotly', \
-    'dplyr', 'tidyr', 'lubridate', 'stringr', 'zoo', \
+    'dplyr', 'tidyr', 'lubridate', 'zoo', \
     'config', 'htmltools', 'arrow', 'remotes' \
     ), Ncpus=2)"
 

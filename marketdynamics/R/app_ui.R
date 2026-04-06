@@ -123,16 +123,10 @@ app_ui <- function(request) {
       bslib::nav_item(
         shiny::selectInput(
           "global_market",
-          label   = NULL,
-          choices = c(
-            "WTI Crude (CL)"     = "CL",
-            "Brent Crude (BRN)"  = "BRN",
-            "Nat Gas (NG)"       = "NG",
-            "Heating Oil (HO)"   = "HO",
-            "RBOB Gasoline (RB)" = "RB"
-          ),
+          label    = NULL,
+          choices  = energy_market_choices,
           selected = "CL",
-          width    = "155px"
+          width    = "175px"
         )
       )
     )

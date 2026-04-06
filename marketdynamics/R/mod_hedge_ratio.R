@@ -6,14 +6,6 @@
 mod_hedge_ratio_ui <- function(id) {
   ns <- NS(id)
 
-  energy_markets <- c(
-    "WTI Crude (CL)"     = "CL",
-    "Brent Crude (BRN)"  = "BRN",
-    "Natural Gas (NG)"   = "NG",
-    "Heating Oil (HO)"   = "HO",
-    "RBOB Gasoline (RB)" = "RB"
-  )
-
   shiny::tagList(
     bslib::card(
       bslib::card_header(
@@ -22,16 +14,12 @@ mod_hedge_ratio_ui <- function(id) {
       bslib::card_body(
         # Row 1: data controls
         shiny::fluidRow(
-          shiny::column(3,
-            shiny::selectInput(ns("energy_market"), "Energy Market",
-              choices = energy_markets, selected = "CL")
-          ),
-          shiny::column(4,
+          shiny::column(5,
             shiny::dateRangeInput(ns("date_range"), "Date Range",
               start = "2007-01-02", end = Sys.Date(),
               min   = "2007-01-02", max = Sys.Date())
           ),
-          shiny::column(3,
+          shiny::column(5,
             shiny::sliderInput(ns("window"), "Rolling Window (days)",
               min = 21, max = 252, value = 63, step = 1)
           ),
@@ -107,9 +95,9 @@ mod_hedge_ratio_server <- function(id, r) {
 
     # Primary data load: selected market + CMT
     shiny::observeEvent(
-      list(input$energy_market, input$date_range),
+      list(r$market, input$date_range),
       ignoreNULL = TRUE, ignoreInit = FALSE, {
-        shiny::req(input$energy_market, input$date_range)
+        shiny::req(r$market, input$date_range)
 
         output$load_status <- shiny::renderUI({
           shiny::tags$small(class = "text-muted", "Loading...")
@@ -119,7 +107,7 @@ mod_hedge_ratio_server <- function(id, r) {
         end   <- as.Date(input$date_range[2])
 
         energy <- tryCatch(
-          load_energy_data(input$energy_market, start, end),
+          load_energy_data(r$market, start, end),
           error = function(e) NULL
         )
         cmt <- tryCatch(
@@ -162,28 +150,23 @@ mod_hedge_ratio_server <- function(id, r) {
     )
 
     shiny::observeEvent(
-      list(input$energy_market, input$date_range),
+      list(r$market, input$date_range),
       ignoreNULL = TRUE, ignoreInit = TRUE, {
-        shiny::req(input$energy_market, input$date_range)
-        if (!input$energy_market %in% c("CL", "HO", "RB")) {
+        shiny::req(r$market, input$date_range)
+        if (!r$market %in% petro_markets) {
           petro_data(NULL)
           return()
         }
         start <- as.Date(input$date_range[1])
         end   <- as.Date(input$date_range[2])
         pd <- tryCatch(
-          load_energy_data(c("CL", "HO", "RB"), start, end) |>
+          load_energy_data(petro_markets, start, end) |>
             dplyr::filter(.data$contract_num == 1),
           error = function(e) NULL
         )
         petro_data(pd)
       }
     )
-
-    shiny::observeEvent(r$market, {
-      shiny::req(r$market)
-      shiny::updateSelectInput(session, "energy_market", selected = r$market)
-    }, ignoreNULL = TRUE, ignoreInit = TRUE)
 
     aligned_returns <- shiny::reactive({
       shiny::req(combined_data(), input$exposure, input$hedge)
@@ -210,14 +193,12 @@ mod_hedge_ratio_server <- function(id, r) {
         rho     <- compute_rolling_correlation(ar$y, ar$x, window = input$window)
         sigma_y <- compute_rolling_vol(ar$y, window = input$window)
         sigma_x <- compute_rolling_vol(ar$x, window = input$window)
-        rho * (sigma_y / sigma_x)
+        dplyr::if_else(sigma_x > 1e-10, rho * (sigma_y / sigma_x), NA_real_)
       }
     })
 
     market_label <- shiny::reactive({
-      labels <- c(CL = "WTI Crude", BRN = "Brent Crude", NG = "Natural Gas",
-                  HO = "Heating Oil", RB = "RBOB Gasoline")
-      unname(labels[input$energy_market])
+      unname(market_labels[r$market])
     })
 
     output$plot_context <- shiny::renderUI({
@@ -308,10 +289,10 @@ mod_hedge_ratio_server <- function(id, r) {
     })
 
     output$market_context <- shiny::renderUI({
-      shiny::req(input$energy_market)
-      mkt <- input$energy_market
+      shiny::req(r$market)
+      mkt <- r$market
 
-      if (mkt %in% c("CL", "HO", "RB")) {
+      if (mkt %in% petro_markets) {
         bslib::card(
           bslib::card_header(
             shiny::tagList(bsicons::bs_icon("bar-chart-line"), " Refinery Margin Context")
@@ -321,6 +302,9 @@ mod_hedge_ratio_server <- function(id, r) {
               col_widths = c(6, 6),
               plotly::plotlyOutput(session$ns("crack_spread_plot"), height = "50vh"),
               plotly::plotlyOutput(session$ns("crack_321_plot"),    height = "50vh")
+            ),
+            shiny::tags$p(class = "text-muted", style = "font-size:0.9rem;",
+              "The 3-2-1 crack spread is the industry benchmark for refinery margin: for every 3 barrels of crude input, a typical US refinery produces approximately 2 barrels of gasoline (RB) and 1 barrel of distillate/diesel (HO). Refiners monitor this spread to decide when to lock in forward margins or adjust crude purchasing. The individual crack spreads (HO crack and RB crack) measure each product\u2019s margin independently and can diverge significantly during seasonal demand shifts. Wide crack spreads attract increased refinery throughput; narrow or negative spreads trigger run cuts and maintenance pull-forwards."
             )
           )
         )

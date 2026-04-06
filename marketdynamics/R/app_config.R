@@ -42,3 +42,29 @@ get_golem_config <- function(
     use_parent = use_parent
   )
 }
+
+# ── Shared constants ──────────────────────────────────────────────────────────
+
+#' Named vector of energy market choices for selectInput widgets.
+#' @noRd
+energy_market_choices <- c(
+  "WTI Crude (CL)"     = "CL",
+  "Brent Crude (BRN)"  = "BRN",
+  "Natural Gas (NG)"   = "NG",
+  "Heating Oil (HO)"   = "HO",
+  "RBOB Gasoline (RB)" = "RB"
+)
+
+#' Display labels keyed by market code.
+#' @noRd
+market_labels <- c(
+  CL  = "WTI Crude",
+  BRN = "Brent Crude",
+  NG  = "Natural Gas",
+  HO  = "Heating Oil",
+  RB  = "RBOB Gasoline"
+)
+
+#' Markets that participate in crack-spread / refinery-margin analysis.
+#' @noRd
+petro_markets <- c("CL", "HO", "RB")

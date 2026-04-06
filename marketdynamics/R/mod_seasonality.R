@@ -6,14 +6,6 @@
 mod_seasonality_ui <- function(id) {
   ns <- NS(id)
 
-  energy_markets <- c(
-    "WTI Crude (CL)"     = "CL",
-    "Brent Crude (BRN)"  = "BRN",
-    "Natural Gas (NG)"   = "NG",
-    "Heating Oil (HO)"   = "HO",
-    "RBOB Gasoline (RB)" = "RB"
-  )
-
   shiny::tagList(
     bslib::card(
       bslib::card_header(
@@ -21,16 +13,12 @@ mod_seasonality_ui <- function(id) {
       ),
       bslib::card_body(
         shiny::fluidRow(
-          shiny::column(3,
-            shiny::selectInput(ns("energy_market"), "Energy Market",
-              choices = energy_markets, selected = "CL")
-          ),
-          shiny::column(4,
+          shiny::column(6,
             shiny::dateRangeInput(ns("date_range"), "Date Range",
               start = "2007-01-02", end = Sys.Date(),
               min   = "2007-01-02", max = Sys.Date())
           ),
-          shiny::column(3,
+          shiny::column(4,
             shiny::radioButtons(ns("view_type"), "View",
               choices  = c(
                 "Monthly Returns"      = "monthly",
@@ -72,9 +60,9 @@ mod_seasonality_server <- function(id, r) {
     energy_data <- shiny::reactiveVal(NULL)
 
     shiny::observeEvent(
-      list(input$energy_market, input$date_range),
+      list(r$market, input$date_range),
       ignoreNULL = TRUE, ignoreInit = FALSE, {
-        shiny::req(input$energy_market, input$date_range)
+        shiny::req(r$market, input$date_range)
 
         output$load_status <- shiny::renderUI({
           shiny::tags$small(class = "text-muted", "Loading...")
@@ -84,7 +72,7 @@ mod_seasonality_server <- function(id, r) {
         end   <- as.Date(input$date_range[2])
 
         data <- tryCatch(
-          load_energy_data(input$energy_market, start, end),
+          load_energy_data(r$market, start, end),
           error = function(e) {
             output$load_status <- shiny::renderUI({
               shiny::tags$small(class = "text-danger", "Error loading data")
@@ -101,15 +89,10 @@ mod_seasonality_server <- function(id, r) {
       }
     )
 
-    shiny::observeEvent(r$market, {
-      shiny::req(r$market)
-      shiny::updateSelectInput(session, "energy_market", selected = r$market)
-    }, ignoreNULL = TRUE, ignoreInit = TRUE)
-
     # Front-month series derived from selected market (e.g. "CL" -> "CL01")
     series_id <- shiny::reactive({
-      shiny::req(input$energy_market)
-      paste0(input$energy_market, "01")
+      shiny::req(r$market)
+      paste0(r$market, "01")
     })
 
     returns <- shiny::reactive({
@@ -120,9 +103,7 @@ mod_seasonality_server <- function(id, r) {
     })
 
     market_label <- shiny::reactive({
-      labels <- c(CL = "WTI Crude", BRN = "Brent Crude", NG = "Natural Gas",
-                  HO = "Heating Oil", RB = "RBOB Gasoline")
-      unname(labels[input$energy_market])
+      unname(market_labels[r$market])
     })
 
     output$plot_context <- shiny::renderUI({
@@ -159,7 +140,7 @@ mod_seasonality_server <- function(id, r) {
         )
 
         # NG storage cycle annotations
-        if (input$energy_market == "NG") {
+        if (r$market == "NG") {
           y_top <- max(abs(idx$pct), na.rm = TRUE) * 1.5
 
           p <- p |> plotly::layout(
@@ -190,7 +171,7 @@ mod_seasonality_server <- function(id, r) {
         }
 
         # RB summer driving + RVP annotation
-        if (input$energy_market == "RB") {
+        if (r$market == "RB") {
           y_top <- max(abs(idx$pct), na.rm = TRUE) * 1.5
           p <- p |> plotly::layout(
             annotations = list(list(
@@ -343,7 +324,7 @@ mod_seasonality_server <- function(id, r) {
         shiny::req(energy_data())
 
         wide <- tryCatch(
-          pivot_wide(energy_data(), input$energy_market),
+          pivot_wide(energy_data(), r$market),
           error = function(e) NULL
         )
         shiny::req(wide, "c1" %in% names(wide), "c2" %in% names(wide))
@@ -393,8 +374,8 @@ mod_seasonality_server <- function(id, r) {
     })
 
     output$market_context <- shiny::renderUI({
-      shiny::req(input$energy_market)
-      mkt <- input$energy_market
+      shiny::req(r$market)
+      mkt <- r$market
 
       if (mkt == "NG") {
         bslib::card(
@@ -402,7 +383,10 @@ mod_seasonality_server <- function(id, r) {
             shiny::tagList(bsicons::bs_icon("thermometer-half"), " Natural Gas \u2014 Storage Cycle")
           ),
           bslib::card_body(
-            plotly::plotlyOutput(session$ns("ng_storage_plot"), height = "50vh")
+            plotly::plotlyOutput(session$ns("ng_storage_plot"), height = "50vh"),
+            shiny::tags$p(class = "text-muted", style = "font-size:0.9rem;",
+              "The EIA reports US natural gas storage levels every Thursday morning. The storage cycle follows a seasonal rhythm: injections during the injection season (April\u2013October) build inventory toward the \u223c4 Tcf working gas capacity, while withdrawals in winter (November\u2013March) deplete stocks to meet heating demand. Front-month NG prices react sharply to storage surprises \u2014 a larger-than-expected injection in summer is bearish; a smaller-than-expected withdrawal in winter is bullish. Tracking price alongside storage helps identify when the market is pricing in a supply deficit or surplus ahead of the seasonal turn."
+            )
           )
         )
 
@@ -431,7 +415,7 @@ mod_seasonality_server <- function(id, r) {
     })
 
     output$ng_storage_plot <- plotly::renderPlotly({
-      shiny::req(energy_data(), input$energy_market == "NG")
+      shiny::req(energy_data(), r$market == "NG")
 
       ng_front <- dplyr::filter(energy_data(), .data$series == "NG01") |>
         dplyr::arrange(date) |>

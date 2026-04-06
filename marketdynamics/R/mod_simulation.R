@@ -6,14 +6,6 @@
 mod_simulation_ui <- function(id) {
   ns <- NS(id)
 
-  energy_markets <- c(
-    "WTI Crude (CL)"     = "CL",
-    "Brent Crude (BRN)"  = "BRN",
-    "Natural Gas (NG)"   = "NG",
-    "Heating Oil (HO)"   = "HO",
-    "RBOB Gasoline (RB)" = "RB"
-  )
-
   shiny::tagList(
     bslib::card(
       bslib::card_header(
@@ -21,16 +13,12 @@ mod_simulation_ui <- function(id) {
       ),
       bslib::card_body(
         shiny::fluidRow(
-          shiny::column(3,
-            shiny::selectInput(ns("energy_market"), "Energy Market",
-              choices = energy_markets, selected = "CL")
-          ),
-          shiny::column(4,
+          shiny::column(6,
             shiny::dateRangeInput(ns("date_range"), "Estimation Window",
               start = "2015-01-01", end = Sys.Date(),
               min   = "2007-01-02", max = Sys.Date())
           ),
-          shiny::column(3,
+          shiny::column(4,
             shiny::radioButtons(ns("model"), "Model",
               choices  = c(
                 "Geometric Brownian Motion" = "gbm",
@@ -97,9 +85,9 @@ mod_simulation_server <- function(id, r) {
     energy_data <- shiny::reactiveVal(NULL)
 
     shiny::observeEvent(
-      list(input$energy_market, input$date_range),
+      list(r$market, input$date_range),
       ignoreNULL = TRUE, ignoreInit = FALSE, {
-        shiny::req(input$energy_market, input$date_range)
+        shiny::req(r$market, input$date_range)
 
         output$load_status <- shiny::renderUI({
           shiny::tags$small(class = "text-muted", "Loading...")
@@ -109,7 +97,7 @@ mod_simulation_server <- function(id, r) {
         end   <- as.Date(input$date_range[2])
 
         data <- tryCatch(
-          load_energy_data(input$energy_market, start, end),
+          load_energy_data(r$market, start, end),
           error = function(e) {
             output$load_status <- shiny::renderUI({
               shiny::tags$small(class = "text-danger", "Error loading data")
@@ -126,21 +114,14 @@ mod_simulation_server <- function(id, r) {
       }
     )
 
-    shiny::observeEvent(r$market, {
-      shiny::req(r$market)
-      shiny::updateSelectInput(session, "energy_market", selected = r$market)
-    }, ignoreNULL = TRUE, ignoreInit = TRUE)
-
     market_label <- shiny::reactive({
-      labels <- c(CL = "WTI Crude", BRN = "Brent Crude", NG = "Natural Gas",
-                  HO = "Heating Oil", RB = "RBOB Gasoline")
-      unname(labels[input$energy_market])
+      unname(market_labels[r$market])
     })
 
     # Front-month log returns
     returns <- shiny::reactive({
       shiny::req(energy_data())
-      series_id <- paste0(input$energy_market, "01")
+      series_id <- paste0(r$market, "01")
       energy_data() |>
         dplyr::filter(.data$series == series_id, !is.na(.data$value)) |>
         dplyr::arrange(.data$date) |>
@@ -165,7 +146,7 @@ mod_simulation_server <- function(id, r) {
           model       = "gbm"
         )
       } else {
-        # OU on log prices: fit AR(1) to log(price)
+        # OU on log prices: fit AR(1)  X(t+1) = a + b*X(t) + eps
         log_p  <- log(p_vec)
         n      <- length(log_p)
         x_lag  <- log_p[-n]
@@ -175,19 +156,27 @@ mod_simulation_server <- function(id, r) {
         b      <- stats::coef(fit)[2]
         resid_sd <- stats::sd(stats::residuals(fit))
 
-        # Annualized parameters
-        # b close to 1 => slow mean reversion; b = 0 => extreme reversion
-        theta <- -log(max(b, 1e-6)) * 252
-        mu_eq <- a / (1 - b)              # long-run log price (log scale)
-        sigma <- resid_sd * sqrt(252)     # annualized diffusion
+        # Clamp b to (0, 1) for a valid stationary OU process
+        # b >= 1 → non-stationary (unit root); b <= 0 → explosive/invalid
+        b_clamped <- min(max(b, 0.001), 0.999)
+
+        # Daily AR(1) coefficients are the simulation primitives
+        # Annualised versions are for display only
+        theta_ann <- -log(b_clamped) * 252
+        mu_eq     <- a / (1 - b_clamped)    # long-run equilibrium log price
+        sigma_ann <- resid_sd * sqrt(252)   # annualized diffusion
+        half_life <- -log(2) / log(b_clamped)
 
         list(
-          theta       = theta,
+          theta       = theta_ann,
           mu_eq       = mu_eq,
           mu_eq_price = exp(mu_eq),
-          sigma       = sigma,
-          b           = b,
+          sigma       = sigma_ann,
+          b           = b_clamped,
+          b_raw       = b,
+          a           = a,
           resid_sd    = resid_sd,
+          half_life   = half_life,
           model       = "ou"
         )
       }
@@ -220,14 +209,15 @@ mod_simulation_server <- function(id, r) {
               exp(drift + p$sigma_daily * z)
           }
         } else {
+          # Exact discrete AR(1) simulation on log prices:
+          # X(t+1) = a + b * X(t) + resid_sd * Z
+          # This is the exact solution — no Euler approximation needed.
           log_s0 <- log(s0)
           log_mat <- matrix(NA_real_, nrow = n_days + 1, ncol = n_sim)
           log_mat[1, ] <- log_s0
           for (t in seq_len(n_days)) {
             z <- stats::rnorm(n_sim)
-            log_mat[t + 1, ] <- log_mat[t, ] +
-              p$theta * (p$mu_eq - log_mat[t, ]) * dt +
-              p$resid_sd * z
+            log_mat[t + 1, ] <- p$a + p$b * log_mat[t, ] + p$resid_sd * z
           }
           sim_mat <- exp(log_mat)
         }
@@ -343,13 +333,16 @@ mod_simulation_server <- function(id, r) {
           c("1-year 10th pct (est.)",  sprintf("$%.2f", s0 * exp(p$mu - 1.645 * p$sigma)))
         )
       } else {
+        hl_txt <- if (!is.na(p$half_life)) sprintf("%.0f trading days", p$half_life) else "Non-stationary"
         rows <- list(
           c("Estimation window",           paste0(start, " \u2013 ", end, " (", n_obs, " obs)")),
           c("Last observed price",         sprintf("$%.3f", s0)),
           c("Equilibrium price (\u03bc\u2091\u2091)", sprintf("$%.2f", p$mu_eq_price)),
           c("Mean reversion speed (\u03b8)",  sprintf("%.2f (annualized)", p$theta)),
+          c("Half-life",                    hl_txt),
           c("Annual diffusion (\u03c3)",      sprintf("%.1f%%", p$sigma * 100)),
-          c("AR(1) coefficient (b)",        sprintf("%.4f", p$b))
+          c("AR(1) coefficient (b)",        paste0(sprintf("%.4f", p$b_raw),
+            if (p$b_raw != p$b) sprintf(" (clamped to %.3f)", p$b) else ""))
         )
       }
 
