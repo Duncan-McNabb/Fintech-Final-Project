@@ -29,15 +29,7 @@ mod_hedge_ratio_ui <- function(id) {
         ),
         # Row 2: analysis controls
         shiny::fluidRow(
-          shiny::column(3,
-            shiny::conditionalPanel(
-              condition = sprintf(
-                "input['%s'] == 'rolling' || input['%s'] == 'scatter'",
-                ns("view_type"), ns("view_type")),
-              shiny::selectInput(ns("exposure"), "Exposure Series (Y)", choices = NULL)
-            )
-          ),
-          shiny::column(3,
+          shiny::column(4,
             shiny::conditionalPanel(
               condition = sprintf(
                 "input['%s'] == 'rolling' || input['%s'] == 'scatter'",
@@ -45,7 +37,7 @@ mod_hedge_ratio_ui <- function(id) {
               shiny::selectInput(ns("hedge"), "Hedge Instrument (X)", choices = NULL)
             )
           ),
-          shiny::column(3,
+          shiny::column(4,
             shiny::conditionalPanel(
               condition = sprintf(
                 "input['%s'] == 'rolling' || input['%s'] == 'scatter'",
@@ -56,7 +48,7 @@ mod_hedge_ratio_ui <- function(id) {
                 selected = "ols")
             )
           ),
-          shiny::column(3,
+          shiny::column(4,
             shiny::radioButtons(ns("view_type"), "View",
               choices  = c(
                 "Rolling HR" = "rolling",
@@ -92,6 +84,18 @@ mod_hedge_ratio_server <- function(id, r) {
 
     combined_data <- shiny::reactiveVal(NULL)
     petro_data    <- shiny::reactiveVal(NULL)
+
+    # Best historical hedge instrument for each commodity
+    # CL-BRN: tightest energy pair (same barrel, different delivery)
+    # HO/RB: crack against crude (refinery margin hedge)
+    # NG: most independent; CL is the most liquid cross-hedge
+    default_hedge <- c(
+      CL  = "BRN01",
+      BRN = "CL01",
+      HO  = "CL01",
+      RB  = "CL01",
+      NG  = "CL01"
+    )
 
     # Primary data load: selected market + CMT
     shiny::observeEvent(
@@ -134,11 +138,17 @@ mod_hedge_ratio_server <- function(id, r) {
             dplyr::pull(.data$series) |> unique() |> sort()
           all_series <- c(energy_front, cmt_series)
 
-          shiny::updateSelectInput(session, "exposure",
-            choices = all_series, selected = all_series[1])
+          best <- default_hedge[[r$market]]
+          hedge_default <- if (!is.null(best) && best %in% all_series) {
+            best
+          } else if (length(all_series) > 1) {
+            all_series[all_series != paste0(r$market, "01")][1]
+          } else {
+            all_series[1]
+          }
           shiny::updateSelectInput(session, "hedge",
             choices  = all_series,
-            selected = if (length(all_series) > 1) all_series[2] else all_series[1])
+            selected = hedge_default)
 
           output$load_status <- shiny::renderUI({ NULL })
         } else {
@@ -168,11 +178,17 @@ mod_hedge_ratio_server <- function(id, r) {
       }
     )
 
+    # Exposure defaults to front-month contract of selected commodity
+    exposure_series <- shiny::reactive({
+      shiny::req(combined_data(), r$market)
+      paste0(r$market, "01")
+    })
+
     aligned_returns <- shiny::reactive({
-      shiny::req(combined_data(), input$exposure, input$hedge)
+      shiny::req(combined_data(), exposure_series(), input$hedge)
       all_ret <- compute_log_returns(combined_data())
 
-      y_df <- dplyr::filter(all_ret, .data$series == input$exposure) |>
+      y_df <- dplyr::filter(all_ret, .data$series == exposure_series()) |>
         dplyr::select(date, log_return) |>
         dplyr::rename(y = log_return)
       x_df <- dplyr::filter(all_ret, .data$series == input$hedge) |>
@@ -238,7 +254,7 @@ mod_hedge_ratio_server <- function(id, r) {
               hoverinfo  = "none"
             ) |>
             plotly::layout(
-              title  = paste0(market_label(), " \u2014 Hedge Ratio: ", input$exposure,
+              title  = paste0(market_label(), " \u2014 Hedge Ratio: ", exposure_series(),
                 " vs ", input$hedge,
                 " (", input$window, "-day ", toupper(input$method), ")"),
               xaxis  = list(title = "Date"),
@@ -270,7 +286,7 @@ mod_hedge_ratio_server <- function(id, r) {
             marker = list(size = 4, opacity = 0.6),
             hovertemplate = paste0(
               input$hedge, ": %{x:.4f}<br>",
-              input$exposure, ": %{y:.4f}<extra></extra>"
+              exposure_series(), ": %{y:.4f}<extra></extra>"
             )
           ) |>
             plotly::add_lines(data = line_df, x = ~x, y = ~y, inherit = FALSE,
@@ -280,9 +296,9 @@ mod_hedge_ratio_server <- function(id, r) {
             ) |>
             plotly::layout(
               title  = paste0(market_label(), " \u2014 Return Scatter: ",
-                input$exposure, " vs ", input$hedge),
+                exposure_series(), " vs ", input$hedge),
               xaxis  = list(title = paste(input$hedge, "Log Return")),
-              yaxis  = list(title = paste(input$exposure, "Log Return")),
+              yaxis  = list(title = paste(exposure_series(), "Log Return")),
               legend = list(orientation = "h")
             )
         }

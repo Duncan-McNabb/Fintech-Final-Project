@@ -175,7 +175,7 @@ mod_forward_curve_server <- function(id, r) {
       s <- tryCatch(spread_stats(), error = function(e) NULL)
       if (is.null(s)) return(shiny::tags$span("\u2014"))
       if (s$is_backwardation) {
-        shiny::tags$span(style = "color:#27ae60; font-weight:700;", "Backwardation")
+        shiny::tags$span(style = "color:#27ae60; font-weight:700; font-size:0.85em;", "Backwardation")
       } else {
         shiny::tags$span(style = "color:#e74c3c; font-weight:700;", "Contango")
       }
